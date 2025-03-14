@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup, Tag
 def fetch_html_selenium(url: str) -> str:
     """
     Responsible for:
-    - checking if input utl is of type string
+    - checking if input url is of type string
     - initialising selenium.webdriver to connect to url
     - check for presence of element class, "a.sc-ffb617e7-0.fTVUpX"
     """

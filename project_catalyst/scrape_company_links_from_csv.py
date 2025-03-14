@@ -15,7 +15,7 @@ def fetch_html_selenium(url: str) -> str:
     """
     Responsible for:
     - checking if input utl is of type string
-    - initialising selenium.webdriver to connect to url
+    - initialising selenium.webdriver to execute JS to load dynamic contents
     - check for presence of element class, "a.sc-ffb617e7-0.fTVUpX"
     """
     # check if input url is of type string
