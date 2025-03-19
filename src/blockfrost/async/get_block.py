@@ -9,6 +9,11 @@ from tenacity import retry, wait_fixed, stop_after_attempt
 from src.models.blockfrost_models.cardano_blocks import BlockfrostCardanoBlockInfo
 
 
+@retry(
+    wait=wait_fixed(0.01),
+    stop=stop_after_attempt(5),
+    reraise=True,
+)
 async def get_block(block_number: str) -> BlockfrostCardanoBlockInfo:
     """
     note that Blockfrost allows block_hash to be passed instead of block_number as well
