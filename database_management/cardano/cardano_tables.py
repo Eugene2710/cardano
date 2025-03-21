@@ -12,7 +12,7 @@ cardano_block_table: Table = Table(
     metadata,
     Column("time", DateTime, nullable=False),
     Column("height", Integer, primary_key=True),
-    Column("block_hash", String, nullable=False),
+    Column("hash", String, nullable=False), # block hash
     Column("slot", Integer, nullable=False),
     Column("epoch", Integer, nullable=True),
     Column("epoch_slot", Integer, nullable=True),
@@ -34,7 +34,7 @@ cardano_transactions_table: Table = Table(
     "cardano_transactions",
     metadata,
     Column("hash", String, primary_key=True), # transaction hash
-    Column("block_hash", String, nullable=False),
+    Column("block", String, nullable=False), # block hash
     Column("block_height", Integer, nullable=False), # block number
     Column("block_time", Integer, nullable=False), # unix timestamp
     Column("slot", Integer, nullable=False),
@@ -56,7 +56,7 @@ cardano_transactions_table: Table = Table(
     Column("valid_contract", Integer, nullable=False),
     Column("created_at", DateTime, nullable=False), # date you insert the row
     ForeignKeyConstraint(
-        ["block_hash", "block_height"],
+        ["block", "block_height"],
         ["cardano_blocks.block_hash", "cardano_blocks.height"],
         name="tx_to_block_fk_composite"
     )
