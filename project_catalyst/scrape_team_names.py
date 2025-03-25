@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup, Tag
 
 import asyncio
+import pandas as pd
 
 
 def fetch_html_selenium(url: str) -> str:
@@ -84,9 +85,36 @@ async def main() -> None:
     Case 1: 1 name in team: https://projectcatalyst.io/funds/10/products-and-integrations/open-standard-for-cross-game-achievement-system-to-gamify-onchain-participation
     Case 2: More than 1 name in team: https://projectcatalyst.io/funds/11/cardano-use-cases-solution/cardano-ai-sentiment-tracker
     """
-    url: str = "https://projectcatalyst.io/funds/10/products-and-integrations/open-standard-for-cross-game-achievement-system-to-gamify-onchain-participation"
-    names: list[str] = await process_url(url=url)
-    print(f"Extracted Team Member Names: {names}")
+    # url: str = "https://projectcatalyst.io/funds/10/products-and-integrations/open-standard-for-cross-game-achievement-system-to-gamify-onchain-participation"
+    # names: list[str] = await process_url(url=url)
+    # print(f"Extracted Team Member Names: {names}")
+    df = pd.read_csv("/Users/eugeneleejunping/Documents/cardano_grants/project_catalyst/catalyst_before_extracting_team_names.csv")
+    if "Link" not in df.columns:
+        print(f"CSV does not contain a 'Link' column")
+        return
+    url_list: list[str] = df["Link"].to_list()
+
+    res: list[list[str]] = await asyncio.gather(*(process_url(url=url) for url in url_list))
+
+    # define max number of names
+    max_names: int = 10
+    # build a list lists where each inner list has exactly max_names items
+
+    names_matrix = [
+        (names if len(names) >= max_names else names + [""] * (max_names - len(names)))[:max_names]
+        for names in res
+    ]
+
+    # create a new DataFrame for the matrix
+    name_cols = [f"Name {i+1}" for i in range(max_names)]
+    names_df: pd.DataFrame = pd.DataFrame(names_matrix, columns=name_cols)
+
+    # concat the new columns with the original DataFrame
+    df = pd.concat([df, names_df], axis=1)
+
+    output_csv = "catalyst_after_extracting_team_names.csv"
+    df.to_csv(output_csv, index=False)
+    print(f"CSV updated with team names. Output saved.")
 
 
 if __name__ == "__main__":
