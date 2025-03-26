@@ -1,7 +1,6 @@
 import uuid
 from sqlalchemy import MetaData, Table, Column, String, DateTime, ForeignKey, ForeignKeyConstraint, Integer, UUID, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.functions import now
 
 Base = declarative_base()
 metadata: MetaData = MetaData()
@@ -129,4 +128,12 @@ cardano_tx_utxo_output_amount_table: Table = Table(
     Column("unit", String, nullable=False),
     Column("quantity", String, nullable=False),
     Column("created_at", DateTime, nullable=False),
+)
+
+s3_import_status_table: Table = Table(
+    "s3_import_status",
+    metadata,
+    Column("data_source", String, primary_key=True), # e.g. blockfrost_cardano_blocks
+    Column("file_modified_date", DateTime, primary_key=True), # date at which the file was modified in S3
+    Column("created_at", DateTime, nullable=False), # date at which the file was created at
 )
