@@ -30,7 +30,7 @@ cardano_block_table: Table = Table(
     Column("created_at", DateTime, nullable=False), # date you insert the row
 )
 
-cardano_block_tranactions_table: Table = Table(
+cardano_block_transactions_table: Table = Table(
     "cardano_block_transactions",
     metadata,
     Column("block", String, primary_key=True), # we will be using block number, but block hash works too
