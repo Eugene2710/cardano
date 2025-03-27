@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import MetaData, Table, Column, String, DateTime, ForeignKey, ForeignKeyConstraint, Integer, UUID, Boolean
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import ARRAY
 
 Base = declarative_base()
 metadata: MetaData = MetaData()
@@ -29,12 +30,20 @@ cardano_block_table: Table = Table(
     Column("created_at", DateTime, nullable=False), # date you insert the row
 )
 
+cardano_block_tranactions_table: Table = Table(
+    "cardano_block_transactions",
+    metadata,
+    Column("block", String, primary_key=True), # we will be using block number, but block hash works too
+    Column("tx_hash", ARRAY(String), nullable=False),
+    Column("created_at", DateTime, nullable=False),
+)
+
 cardano_transactions_table: Table = Table(
     "cardano_transactions",
     metadata,
     Column("hash", String, primary_key=True), # transaction hash
     Column("block", String, nullable=False), # block hash
-    Column("block_height", Integer, nullable=False), # block number
+    Column("block_height", Integer, ForeignKey("cardano_block_transactions.block", name="tx_to_block_tx_fk"), nullable=False), # block number
     Column("block_time", Integer, nullable=False), # unix timestamp
     Column("slot", Integer, nullable=False),
     Column("index", Integer, nullable=False), # tx index within block
@@ -54,11 +63,6 @@ cardano_transactions_table: Table = Table(
     Column("redeemer_count", Integer, nullable=False),
     Column("valid_contract", Integer, nullable=False),
     Column("created_at", DateTime, nullable=False), # date you insert the row
-    ForeignKeyConstraint(
-        ["block", "block_height"],
-        ["cardano_blocks.block_hash", "cardano_blocks.height"],
-        name="tx_to_block_fk_composite"
-    )
 )
 
 cardano_tx_output_amount_table: Table = Table(
@@ -133,7 +137,7 @@ cardano_tx_utxo_output_amount_table: Table = Table(
 s3_import_status_table: Table = Table(
     "s3_import_status",
     metadata,
-    Column("data_source", String, primary_key=True), # e.g. blockfrost_cardano_blocks
+    Column("table", String, primary_key=True), # e.g. cardano_block_table
     Column("file_modified_date", DateTime, primary_key=True), # date at which the file was modified in S3
     Column("created_at", DateTime, nullable=False), # date at which the file was created at
 )
