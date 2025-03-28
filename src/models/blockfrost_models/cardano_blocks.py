@@ -6,6 +6,7 @@ class BlockfrostCardanoBlockInfo(BaseModel):
     Represents the block information
     Source: https://docs.blockfrost.io/#tag/cardano--blocks/GET/blocks/{hash_or_number}
     """
+
     time: int
     height: int
     hash: str
