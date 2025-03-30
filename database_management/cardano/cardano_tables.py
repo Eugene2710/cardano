@@ -160,7 +160,7 @@ cardano_tx_utxo_output_table: Table = Table(
         "reference_script_hash", String, nullable=True
     ),  # used to check for protocols
     Column("consumed_by_tx", String, nullable=True),
-    Column("created_at", nullable=False),
+    Column("created_at", DateTime, nullable=False),
 )
 
 cardano_tx_utxo_output_amount_table: Table = Table(
@@ -177,8 +177,8 @@ cardano_tx_utxo_output_amount_table: Table = Table(
     Column("created_at", DateTime, nullable=False),
 )
 
-s3_to_db_table: Table = Table(
-    "s3_to_db",
+s3_to_db_import_status_table: Table = Table(
+    "s3_to_db_import_status",
     metadata,
     Column("table", String, primary_key=True),  # e.g. cardano_block_table
     Column(
@@ -187,5 +187,13 @@ s3_to_db_table: Table = Table(
     Column(
         "created_at", DateTime, nullable=False
     ),  # date at which the file was created at
+)
+
+provider_to_s3_import_status_table: Table = Table(
+    "provider_to_s3_import_status",
+    metadata,
+    Column("table", String, primary_key=True),
+    Column("block_height", Integer, primary_key=True), # block number
+    Column("created_at", DateTime, nullable=False),
 )
 
