@@ -23,12 +23,6 @@ boto3 = "^1.35.92"
 beautifulsoup4 = "^4.13.3"
 selenium = "^4.29.0"
 pandas = "^2.2.3"
-
-[tool.poetry.dev-dependencies]
-ruff = "^0.4.8"
-black = "^24.4.2"
-mypy = "^1.10.0"
-pytest = "^8.2.2"
 boto3-stubs = {extras = ["s3"], version = "^1.35.92"}
 pandas-stubs = "^2.2.3.241126"
 types-pymysql = "^1.1.0.20241103"
@@ -47,6 +41,9 @@ types-toml = "^0.10.8.20240310"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.14.1"
+ruff = "^0.4.8"
+black = "^24.4.2"
+pytest = "^8.2.2"
 
 [build-system]
 requires = ["poetry-core"]
