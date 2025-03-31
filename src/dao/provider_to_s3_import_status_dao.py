@@ -1,5 +1,4 @@
 import os
-import asyncio
 from asyncio import new_event_loop, AbstractEventLoop
 
 from dotenv import load_dotenv
@@ -56,7 +55,7 @@ class ProviderToS3ImportStatusDAO:
     )
     async def read_latest_import_status(self, table: str) -> int | None:
         query_latest_import_status: Select = select(
-            func.max(self._table.c.block_height)
+            func.coalesce(func.max(self._table.c.block_height), 0)
         ).where(self._table.c.table == table)
         try:
             async with self._engine.begin() as conn:
