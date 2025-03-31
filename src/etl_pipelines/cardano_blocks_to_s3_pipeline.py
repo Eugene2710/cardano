@@ -19,7 +19,12 @@ from src.models.file_info.file_info import FileInfo
 
 class CardanoBlocksToETLPipeline:
     """
-    R
+    Responsible for:
+    - checking if last block height in database < the latest block in blockfrost (to_do next)
+    - extracting raw cardano blocks data from Blockfrost in batches of 1000
+    - convert list of extracted block data(dict type) to json -> bytes
+    - upload extracted data to S3 in json format
+    - update provider_to_s3_import_status table with the latest block number for "cardano_blocks" on 'table' column
     """
 
     def __init__(
@@ -35,32 +40,34 @@ class CardanoBlocksToETLPipeline:
         self._extractor: CardanoBlockExtractor = extractor
 
     async def run(self) -> None:
-        """
-        Step 1: Get latest file modified date from s3_import_status table
-        Step 2: Get all files whole modified date is after the s3_import_status modified date
-        Step 3: For each file, save it into DB with DAO
-        Step 4: Insert file latest modified date into DB
-        """
         latest_block_height: int | None = (
             await self._provider_to_s3_import_status_dao.read_latest_import_status(
                 self._table
             )
         )
-        # this is for listing files after import_status_modified_date - for S3 specific
-        default_block_height: int = latest_block_height or 4865265
 
-        block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(default_block_height))
-        block_info_dict: list[dict[str, Any]] = [block_info.model_dump()]
+        num_of_blocks: int = 1000
+        start_block_height: int = (latest_block_height+1) or 11292700
+        end_block_height: int = start_block_height+num_of_blocks
+        curr_block_height: int = start_block_height
 
-        # model dump to convert to dict, then use to convert to bytesio
-        block_info_json_bytes = json.dumps(block_info_dict).encode('utf-8')
-        bytes_io = io.BytesIO(block_info_json_bytes)
+        # list to collect all block data into a list of dict
+        block_info_list: list[dict[str, Any]] = []
+        # TO_DO: introduce a cut off for the block numbers to stop extracting beyond it
+        while curr_block_height < end_block_height:
+            block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
+            block_info_list.append(block_info.model_dump())
+            curr_block_height += 1
+        # convert the entire list to a JSON string and encode it to bytes
+        combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
+        # create a bytesIO buffer from JSON bytes
+        bytes_io = io.BytesIO(combined_json_bytes)
 
-        self._s3_explorer.upload_buffer(bytes_io, source_path="cardano/catalyst/2025/03/30/catalyst_20250108.json")
+        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/{start_block_height}/cardano_blocks_{start_block_height}.json")
 
         updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
             table=self._table,
-            block_height=default_block_height+10,
+            block_height=end_block_height,
             created_at=datetime.utcnow(),
         )
         await self._provider_to_s3_import_status_dao.insert_latest_import_status(
