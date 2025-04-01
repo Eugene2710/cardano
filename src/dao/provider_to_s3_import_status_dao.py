@@ -72,7 +72,6 @@ class ProviderToS3ImportStatusDAO:
 if __name__ == "__main__":
     load_dotenv()
     connection_string: str = os.getenv("ASYNC_PG_CONNECTION_STRING", "")
-    print(connection_string)
     dao: ProviderToS3ImportStatusDAO = ProviderToS3ImportStatusDAO(connection_string)
     s3_import_status_dto: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
         table="cardano_blocks",
