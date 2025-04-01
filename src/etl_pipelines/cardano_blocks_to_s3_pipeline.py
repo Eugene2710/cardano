@@ -4,17 +4,14 @@ import json
 import os
 from asyncio import AbstractEventLoop, new_event_loop
 from datetime import datetime
-from typing import Generator
 
 from dotenv import load_dotenv
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
 from src.blockfrost.asynchronous.get_block import CardanoBlockExtractor
 from src.models.blockfrost_models.raw_cardano_blocks import RawBlockfrostCardanoBlockInfo
 from src.dao.provider_to_s3_import_status_dao import ProviderToS3ImportStatusDAO
 from src.file_explorer.s3_file_explorer import S3Explorer
 from src.models.database_transfer_objects.provider_to_s3_import_status import ProviderToS3ImportStatusDTO
-from src.models.file_info.file_info import FileInfo
 
 
 class CardanoBlocksToETLPipeline:
