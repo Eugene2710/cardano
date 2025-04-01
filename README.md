@@ -7,7 +7,7 @@ A non-realtime ETL pipeline that siphons blocks, block transactions, transaction
 at high throughput into S3 and Postgres, orchestrated by Airflow.
 
 ### Architecture
-![image](/Users/eugeneleejunping/Documents/cardano_grants/images/cardano_etl_pipeline_architecture.png)
+![image](./images/cardano_etl_pipeline_architecture.png)
 
 
 ## 2) Cardano Data Analysis
