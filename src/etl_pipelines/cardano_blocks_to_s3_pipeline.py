@@ -7,7 +7,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from src.blockfrost.asynchronous.get_block import CardanoBlockExtractor
+from src.extractors.get_block import CardanoBlockExtractor
 from src.models.blockfrost_models.raw_cardano_blocks import RawBlockfrostCardanoBlockInfo
 from src.dao.provider_to_s3_import_status_dao import ProviderToS3ImportStatusDAO
 from src.file_explorer.s3_file_explorer import S3Explorer
@@ -51,7 +51,7 @@ class CardanoBlocksToETLPipeline:
         # list to collect all block data into a list of dict
         block_info_list: list[dict[str, Any]] = []
         # TO_DO: introduce a cut off for the block numbers to stop extracting beyond it
-        while curr_block_height < end_block_height:
+        while curr_block_height <= end_block_height:
             block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
             block_info_list.append(block_info.model_dump())
             curr_block_height += 1
@@ -60,7 +60,7 @@ class CardanoBlocksToETLPipeline:
         # create a bytesIO buffer from JSON bytes
         bytes_io = io.BytesIO(combined_json_bytes)
 
-        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/{start_block_height}/cardano_blocks_{start_block_height}.json")
+        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/{end_block_height}/cardano_blocks_{end_block_height}.json")
 
         updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
             table=self._table,
