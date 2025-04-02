@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.models.blockfrost_models.raw_cardano_blocks import RawBlockfrostCardanoBlockInfo
 
