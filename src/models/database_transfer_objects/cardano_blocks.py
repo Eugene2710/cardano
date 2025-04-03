@@ -33,7 +33,7 @@ class CardanoBlocksDTO(BaseModel):
             input: RawBlockfrostCardanoBlockInfo
     ) -> "CardanoBlocksDTO":
         return CardanoBlocksDTO(
-            time=datetime.fromtimestamp(input.time, tz=timezone.utc),
+            time=datetime.utcfromtimestamp(input.time),
             height=input.height,
             hash=input.hash,
             slot=input.slot,
