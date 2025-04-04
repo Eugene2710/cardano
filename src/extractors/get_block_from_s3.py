@@ -24,13 +24,15 @@ class CardanoBlockS3Extractor:
         stop=stop_after_attempt(5),
         reraise=True,
     )
-    async def get_block_from_s3(self, block_height: str) -> list[CardanoBlocksDTO]:
+    async def get_block_from_s3(self, end_block_height: str) -> list[CardanoBlocksDTO]:
         """
         - get specified json file from s3 using S3Explorer.download_to_buffer
         - add json file to database
+        NOTE: This only extracts 1 file every time it is called
+        the file can contain either batch of blocks or 1 block
         """
         # download the JSON file into a BytesIO buffer
-        buffer: io.BytesIO = self._s3_explorer.download_to_buffer(s3_path=f"cardano/blocks/{block_height}/cardano_blocks_{block_height}.json")
+        buffer: io.BytesIO = self._s3_explorer.download_to_buffer(s3_path=f"cardano/blocks/{end_block_height}/cardano_blocks_{end_block_height}.json")
         # load the JSON content into a list of dict
         block_data: list[dict[str, Any]] = json.load(buffer)
 
@@ -55,7 +57,7 @@ if __name__ == "__main__":
     extractor: CardanoBlockS3Extractor = CardanoBlockS3Extractor(s3_explorer=s3_explorer)
     event_loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
     res: list[CardanoBlocksDTO] = event_loop.run_until_complete(
-        extractor.get_block_from_s3("11293700")
+        extractor.get_block_from_s3(end_block_height="11293700")
     )
     pprint(res)
 
