@@ -22,7 +22,7 @@ setup_logging(logger)
 
 class CardanoBlockDAO:
     """
-
+    Responsible for inserting a list of CardanoBlocksDTO into the DB
     """
     def __init__(self, connection_string: str) -> None:
         self._engine: AsyncEngine = create_async_engine(connection_string)
