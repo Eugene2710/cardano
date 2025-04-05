@@ -61,10 +61,17 @@ class CardanoBlockDAO:
             }
             for block in input
         ]
+        # set chunk size limit as 500
+        chunk_size: int = 500
+        for i in range(0, len(records), chunk_size):
+            chunk = records[i: i+chunk_size]
+            stmt = insert(self._table).values(chunk).on_conflict_do_nothing(index_elements=["height"])
+            await async_connection.execute(stmt)
 
-        stmt = insert(self._table).values(records).on_conflict_do_nothing(index_elements=["height"])
 
-        await async_connection.execute(stmt)
+        # stmt = insert(self._table).values(records).on_conflict_do_nothing(index_elements=["height"])
+        #
+        # await async_connection.execute(stmt)
 
 
 if __name__ == "__main__":
