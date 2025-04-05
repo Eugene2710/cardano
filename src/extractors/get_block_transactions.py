@@ -20,7 +20,7 @@ class CardanoBlockTransactionsExtractor:
         Responsible for getting transaction hashes by parsing in the block number
         Blockfrost allows block hash to be passed instead of block number, but we will be sticking to only block number
         """
-        url: str = f"https://cardano-mainnet.blockfrost.io/api/v0/blocks/{block_number}/txs"
+        url: str = f"https://cardano-mainnet.blockfrost.io/api/v0/blocks/{block_height}/txs"
 
         headers: dict[str:str] = {"Project_id": os.getenv("BLOCKFROST_PROJECT_ID")}
 
