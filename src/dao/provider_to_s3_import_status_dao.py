@@ -74,15 +74,15 @@ if __name__ == "__main__":
     connection_string: str = os.getenv("ASYNC_PG_CONNECTION_STRING", "")
     dao: ProviderToS3ImportStatusDAO = ProviderToS3ImportStatusDAO(connection_string)
     s3_import_status_dto: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
-        table="cardano_blocks",
-        block_height=4865265,
+        table="cardano_block_transactions",
+        block_height=500,
         created_at=datetime.utcnow(),
     )
     event_loop: AbstractEventLoop = new_event_loop()
 
-    event_loop.run_until_complete(dao.insert_latest_import_status(s3_import_status_dto))
+   #  event_loop.run_until_complete(dao.insert_latest_import_status(s3_import_status_dto))
 
-    latest_file_date: datetime | None = event_loop.run_until_complete(
-        dao.read_latest_import_status(table="cardano_blocks")
+    latest_block_height: int | None = event_loop.run_until_complete(
+        dao.read_latest_import_status(table="cardano_block_transactions")
     )
-    print(latest_file_date)
+    print(latest_block_height)

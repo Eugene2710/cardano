@@ -1,8 +1,10 @@
 from typing import Any
 from pydantic import BaseModel
-from src.models.blockfrost_models.cardano_transaction_utxo import (
-    CardanoTransactionOutput,
-)
+
+
+class CardanoTransactionOutput(BaseModel):
+    unit: str
+    quantity: str
 
 
 class CardanoTransactions(BaseModel):
@@ -35,7 +37,7 @@ class CardanoTransactions(BaseModel):
             {
                 **input,
                 "output_amount": [
-                    CardanoTransactionOutput.from_json(single_output_amount)
+                    CardanoTransactionOutput.model_validate(single_output_amount)
                     for single_output_amount in input["output_amount"]
                 ],
             }
