@@ -181,13 +181,8 @@ s3_to_db_import_status_table: Table = Table(
     "s3_to_db_import_status",
     metadata,
     Column("table", String, primary_key=True),  # e.g. cardano_block_table
-    Column("block_height", Integer, primary_key=True),
-    # Column(
-    #     "file_modified_date", DateTime, primary_key=True
-    # ),  # date at which the file was modified in S3
-    Column(
-        "created_at", DateTime, nullable=False
-    ),  # date at which the file was created at
+    Column("file_modified_date", DateTime, primary_key=True), # date at which the file was modified in S3
+    Column("created_at", DateTime, nullable=False),  # date at which the file was created at
 )
 
 provider_to_s3_import_status_table: Table = Table(
