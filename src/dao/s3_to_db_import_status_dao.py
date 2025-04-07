@@ -1,3 +1,4 @@
+import asyncio
 import os
 from asyncio import new_event_loop, AbstractEventLoop
 
@@ -36,14 +37,13 @@ class S3ToDbImportStatusDAO:
         reraise=True
     )
     async def insert_latest_import_status(
-            self, import_status: S3ToDBImportStatusDTO
+            self, import_status: S3ToDBImportStatusDTO, conn: AsyncConnection
     ) -> None:
         insert_text_clause: Insert = insert(self._table).values(
             import_status.model_dump()
         ).on_conflict_do_nothing()
         try:
-            async with self._engine.begin() as conn:
-                await conn.execute(insert_text_clause)
+            await conn.execute(insert_text_clause)
         except SQLAlchemyError:
             logger.exception("Failed to insert latest import status")
             raise
@@ -55,9 +55,9 @@ class S3ToDbImportStatusDAO:
     )
     async def read_latest_import_status(
             self, table: str
-    ) -> int | None:
+    ) -> datetime | None:
         query_latest_import_status: Select = select(
-            func.coalesce(func.max(self._table.c.block_height), 0)
+            func.max(self._table.c.file_modified_date)
         ).where(self._table.c.table == table)
         try:
             async with self._engine.begin() as conn:
@@ -77,11 +77,18 @@ if __name__ == "__main__":
     dao: S3ToDbImportStatusDAO = S3ToDbImportStatusDAO(connection_string)
     db_import_status_dto: S3ToDBImportStatusDTO = S3ToDBImportStatusDTO(
         table="cardano_blocks",
-        block_height=4865265,
+        file_modified_date=datetime.utcnow(),
         created_at=datetime.utcnow(),
     )
+
+    async def run_insert_import_status() -> None:
+        engine: AsyncEngine = create_async_engine(connection_string)
+        async with engine.begin() as conn:
+            await dao.insert_latest_import_status(db_import_status_dto, conn)
+    asyncio.run(run_insert_import_status())
+
     event_loop: AbstractEventLoop = new_event_loop()
-    event_loop.run_until_complete(dao.insert_latest_import_status(db_import_status_dto))
+    # event_loop.run_until_complete(dao.insert_latest_import_status(db_import_status_dto))
     latest_file_date: datetime | None = event_loop.run_until_complete(
         dao.read_latest_import_status(table="cardano_blocks")
     )
