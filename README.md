@@ -6,7 +6,7 @@ The Cardano Tasks can be broken down into 3 main parts currently
 A non-realtime ETL pipeline that siphons blocks, block transactions, transactions (inclusive of UTXO) data periodically
 at high throughput into S3 and Postgres, orchestrated by Airflow.
 
-### Architecture
+### Architecture (updated)
 ![image](./images/cardano_etl_pipeline_architecture.png)
 
 
