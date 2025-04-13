@@ -1,8 +1,11 @@
+import io
 from datetime import datetime
 import os
 from dotenv import load_dotenv
 from asyncio import AbstractEventLoop, new_event_loop
+from typing import Generator
 
+from src.models.file_info.file_info import FileInfo
 from src.dao.s3_to_db_import_status_dao import S3ToDbImportStatusDAO
 from src.dao.provider_to_s3_import_status_dao import ProviderToS3ImportStatusDAO
 from src.dao.cardano_block_dao import CardanoBlockDAO
@@ -19,15 +22,14 @@ from pprint import pprint
 class S3ToDBCardanoBlocksETLPipeline:
     """
     Responsible for:
-        1) s3_to_db_import_status_dao.read_latest_import_status + provider_to_s3_import_status_dao.read_latest_import_status:
-        check if latest_block_height (from db) < s3_last_block_height
-        Possible cases:
-        Case 1: if latest_block_height (from s3_to_db_import_status) >= latest block from s3 (from provider_to_s3_import_status)
-            technically it should not be more than, but in this case for now: do nothing
-        Case 2: if latest_block_height (from s3_to_db_import_status) < latest block from s3 (from provider_to_s3_import_status)
-            extract from data from s3 into DB
-        2) provider_to_s3_import_status_table: get block_heights from provider_to_s3_import_status_table
-        3) CardanoBlockS3Extractor.get_block_from_s3: get block info from S3 + batch the block info into a list of CardanoBlocksDTO
+        1) Get latest modified date from s3_import status table
+        Use s3_to_db_import_status_dao.read_latest_import_status()
+        2) Get all files whose modified date is after s3_import_status modified_date
+        Use s3_explorer.list_files()
+        3) For each file, save it into DB with DAO.insert_blocks
+        provider_to_s3_import_status_table: get block_heights from provider_to_s3_import_status_table
+        4) Insert file latest modified date into DB
+        CardanoBlockS3Extractor.get_block_from_s3: get block info from S3 + batch the block info into a list of CardanoBlocksDTO
         4) cardano_block_dao.insert_blocks: insert the list of block info into cardano_block table of DB
         5) s3_to_db_import_status_dao.insert_latest_import_status: update s3_to_db_import_status_table - insert the latest block_height, "cardano_block" into table
 
@@ -39,10 +41,14 @@ class S3ToDBCardanoBlocksETLPipeline:
         self,
         s3_to_db_import_status_dao: S3ToDbImportStatusDAO,
         provider_to_s3_import_status_dao: ProviderToS3ImportStatusDAO,
+        table: str,
+        prefix_path: str,
         cardano_block_dao: CardanoBlockDAO,
         s3_explorer: S3Explorer,
     ) -> None:
         self._s3_to_db_import_status_dao: S3ToDbImportStatusDAO = s3_to_db_import_status_dao
+        self._table: str = table
+        self._s3_prefix_path = prefix_path
         self._provider_to_s3_import_status_dao: ProviderToS3ImportStatusDAO = provider_to_s3_import_status_dao
         self._s3_to_db_import_status: str = "s3_to_db_import_status"
         self._provider_to_s3_import_status: str = "provider_to_s3_import_status"
@@ -57,21 +63,51 @@ class S3ToDBCardanoBlocksETLPipeline:
         """
         async version to run the pipeline
         """
-        db_latest_block_height: int | None = (
+        # db_latest_block_height: int | None = (
+        #     await self._s3_to_db_import_status_dao.read_latest_import_status(
+        #         table="cardano_blocks"
+        #     )
+        # )
+        latest_modified_date: datetime | None = (
             await self._s3_to_db_import_status_dao.read_latest_import_status(
-                table="cardano_blocks"
+                self._table
             )
         )
+        # this is for listing files after import_status_modified_date - for S3 specific
+        default_modified_date: datetime = latest_modified_date or datetime(
+            year=2020, month=12, day=1
+        )
+
+        s3_file_info: Generator[FileInfo, None, None] = self._s3_explorer.list_files(
+            self._s3_prefix_path, default_modified_date
+        )
+        # this is for current batch's latest modified date - for batch specific
+        current_batch_latest_modified_date: datetime = datetime(
+            year=2020, month=12, day=1
+        )
+
+        async with self._engine.begin() as conn:
+            for file_info in s3_file_info:
+                # get file path of each file in S3
+                csv_bytes: io.BytesIO = self._s3_explorer.download_to_buffer(
+                    file_info.file_path
+                )
+            # convert file
+            await self._cardano_block_dao.insert_blocks(
+                async_connection=conn, input=
+            )
+
+
         # the very last block that is present in  S3
-        s3_last_block_height: int | None = (
-            await self._provider_to_s3_import_status_dao.read_latest_import_status(
-                table="cardano_blocks"
-            )
-        )
+        # s3_last_block_height: int | None = (
+        #     await self._provider_to_s3_import_status_dao.read_latest_import_status(
+        #         table="cardano_blocks"
+        #     )
+        # )
         # if db_latest_block_height is not None and db_latest_block_height >= s3_last_block_height:
-        if db_latest_block_height >= s3_last_block_height:
-            print(f"blocks in db is up to date with s3")
-            return None
+        # if db_latest_block_height >= s3_last_block_height:
+        #     print(f"blocks in db is up to date with s3")
+        #     return None
         """
         e.g. 8500 blocks
         refer to the smallest block number in the provider_to_s3_import_status table that is > latest_block_height
@@ -79,9 +115,9 @@ class S3ToDBCardanoBlocksETLPipeline:
         in that row and the next row
         """
 
-        start_block_height: int = db_latest_block_height + 1 if db_latest_block_height else 0
-
-        curr_block_height: int = start_block_height
+        # start_block_height: int = db_latest_block_height + 1 if db_latest_block_height else 0
+        #
+        # curr_block_height: int = start_block_height
         # get a list of block_numbers to extract till
         # block_number_list: list[int] = []
 

@@ -51,6 +51,7 @@ class CardanoBlocksToETLPipeline:
         # list to collect all block data into a list of dict
         block_info_list: list[dict[str, Any]] = []
         # TO_DO: introduce a cut off for the block numbers to stop extracting beyond it
+        # TO_DO: implement a try catch to catch blocks that could not eb extracted anymore
         while curr_block_height <= end_block_height:
             block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
             block_info_list.append(block_info.model_dump())
@@ -99,3 +100,11 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+"""
+TO_DO:
+write an integration test to:
+1. write the interface/function signature
+2. write the rests; tests will fail since implementation is missing
+3. Complete implementation
+"""
