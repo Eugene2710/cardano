@@ -3,8 +3,8 @@ import os
 from asyncio import new_event_loop, AbstractEventLoop
 
 from dotenv import load_dotenv
-from tenacity import retry, wait_fixed, stop_after_attempt
-from sqlalchemy.exc import SQLAlchemyError
+from tenacity import retry, wait_fixed, stop_after_attempt, retry_if_exception_type
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncConnection
 from sqlalchemy import (
     Table,
@@ -32,6 +32,7 @@ class S3ToDbImportStatusDAO:
         self._table: Table = s3_to_db_import_status_table
 
     @retry(
+        retry=retry_if_exception_type(OperationalError),
         wait=wait_fixed(0.01),  # ~10ms before attempts
         stop=stop_after_attempt(5),  # equivalent to 5 retries
         reraise=True
@@ -44,11 +45,15 @@ class S3ToDbImportStatusDAO:
         ).on_conflict_do_nothing()
         try:
             await conn.execute(insert_text_clause)
+        except OperationalError:
+            logger.warning("Failed to insert latest import status due to OperationalError.Retrying..")
+            raise
         except SQLAlchemyError:
-            logger.exception("Failed to insert latest import status")
+            logger.exception("Failed to insert latest import status due to unexpected error. Exiting..")
             raise
 
     @retry(
+        retry=retry_if_exception_type(OperationalError),
         wait=wait_fixed(0.01),  # ~10ms before attempts
         stop=stop_after_attempt(5),  # equivalent to 5 retries
         reraise=True
@@ -65,10 +70,13 @@ class S3ToDbImportStatusDAO:
                     query_latest_import_status
                 )
             result: Row | None = cursor_result.fetchone()
-        except SQLAlchemyError:
-            logger.exception("failed to fetch from s3 latest import status")
+            return result[0] if result else None
+        except OperationalError:
+            logger.warning("Failed to fetch latest import status due to OperationalError.Retrying..")
             raise
-        return result[0] if result else None
+        except SQLAlchemyError:
+            logger.exception("failed to fetch latest import status due to unexpected error. Exiting..")
+            raise
 
 
 if __name__ == "__main__":
