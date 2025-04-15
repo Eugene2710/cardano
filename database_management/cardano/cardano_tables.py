@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     UUID,
     Boolean,
+    func
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -37,7 +38,12 @@ cardano_block_table: Table = Table(
     Column("previous_block", String, nullable=True),
     Column("next_block", String, nullable=True),
     Column("confirmations", Integer, nullable=False),
-    Column("created_at", DateTime, nullable=False),  # date you insert the row
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now() # server-side default
+    ),  # date you insert the row
 )
 
 cardano_block_transactions_table: Table = Table(
@@ -47,7 +53,12 @@ cardano_block_transactions_table: Table = Table(
         "block", String, primary_key=True
     ),  # we will be using block number, but block hash works too
     Column("tx_hash", ARRAY(String), nullable=False),
-    Column("created_at", DateTime, nullable=False),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_transactions_table: Table = Table(
@@ -78,7 +89,12 @@ cardano_transactions_table: Table = Table(
     Column("asset_mint_or_burn_count", Integer, nullable=False),
     Column("redeemer_count", Integer, nullable=False),
     Column("valid_contract", Integer, nullable=False),
-    Column("created_at", DateTime, nullable=False),  # date you insert the row
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_tx_output_amount_table: Table = Table(
@@ -93,7 +109,12 @@ cardano_tx_output_amount_table: Table = Table(
     ),  # transaction hash
     Column("unit", String, nullable=False),
     Column("quantity", String, nullable=False),
-    Column("created_at", DateTime, nullable=False),  # date you insert the row
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_tx_utxo_table: Table = Table(
@@ -101,7 +122,12 @@ cardano_tx_utxo_table: Table = Table(
     metadata,
     Column("hash", String, primary_key=True),
     Column("block_height", Integer, nullable=False),
-    Column("created_at", DateTime, nullable=False),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_tx_utxo_input_table: Table = Table(
@@ -125,7 +151,12 @@ cardano_tx_utxo_input_table: Table = Table(
     ),  # used to check for protocols
     Column("collateral", Boolean, nullable=False),
     Column("reference", Boolean, nullable=True),
-    Column("created_at", DateTime, nullable=True),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_tx_utxo_input_amount_table: Table = Table(
@@ -139,7 +170,12 @@ cardano_tx_utxo_input_amount_table: Table = Table(
     ),  # known as tx_hash in Blockfrost doc, but is referring to the utxo hash of the tx
     Column("unit", String, nullable=False),
     Column("quantity", String, nullable=False),
-    Column("created_at", DateTime, nullable=False),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_tx_utxo_output_table: Table = Table(
@@ -160,7 +196,12 @@ cardano_tx_utxo_output_table: Table = Table(
         "reference_script_hash", String, nullable=True
     ),  # used to check for protocols
     Column("consumed_by_tx", String, nullable=True),
-    Column("created_at", DateTime, nullable=False),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 cardano_tx_utxo_output_amount_table: Table = Table(
@@ -174,7 +215,12 @@ cardano_tx_utxo_output_amount_table: Table = Table(
     ),
     Column("unit", String, nullable=False),
     Column("quantity", String, nullable=False),
-    Column("created_at", DateTime, nullable=False),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 s3_to_db_import_status_table: Table = Table(
@@ -182,7 +228,12 @@ s3_to_db_import_status_table: Table = Table(
     metadata,
     Column("table", String, primary_key=True),  # e.g. cardano_block_table
     Column("file_modified_date", DateTime, primary_key=True), # date at which the file was modified in S3
-    Column("created_at", DateTime, nullable=False),  # date at which the file was created at
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
 provider_to_s3_import_status_table: Table = Table(
@@ -190,6 +241,11 @@ provider_to_s3_import_status_table: Table = Table(
     metadata,
     Column("table", String, primary_key=True),
     Column("block_height", Integer, primary_key=True), # block number
-    Column("created_at", DateTime, nullable=False),
+    Column(
+        "created_at",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now()  # server-side default
+    ),  # date you insert the row
 )
 
