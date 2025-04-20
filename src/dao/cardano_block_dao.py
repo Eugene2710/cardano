@@ -125,6 +125,7 @@ class CardanoBlockDAO:
         # ***WARNING***: private attribute; can break in future SQLAlchemy versions
         actual_asyncpg_conn = raw_adapt._connection
 
+        # rewind and prepare column list without created_at
         data_buffer.seek(0)
         columns = [col.name for col in self._table.columns]
         await actual_asyncpg_conn.copy_to_table(
@@ -144,6 +145,10 @@ class CardanoBlockDAO:
         """
         )
         await async_connection.execute(insert_clause)
+
+    @property
+    def table(self):
+        return self._table
 
 
 if __name__ == "__main__":
