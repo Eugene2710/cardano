@@ -58,27 +58,28 @@ class CardanoBlocksToETLPipeline:
             block_info_list.append(block_info.model_dump())
             curr_block_height += 1
 
-        cols = [
-            "time", "height", "hash", "slot", "epoch", "epoch_slot",
-            "slot_leader", "size", "tx_count", "output", "fees",
-            "block_vrf", "op_cert", "op_cert_counter",
-            "previous_block", "next_block", "confirmations"
-        ]
-        text_io = io.StringIO()
-        writer = csv.DictWriter(text_io, fieldnames=cols)
-        writer.writeheader()
-        for rec in block_info_list:
-            writer.writerow({c: rec.get(c) for c in cols})
+
+        # cols = [
+        #     "time", "height", "hash", "slot", "epoch", "epoch_slot",
+        #     "slot_leader", "size", "tx_count", "output", "fees",
+        #     "block_vrf", "op_cert", "op_cert_counter",
+        #     "previous_block", "next_block", "confirmations"
+        # ]
+        # text_io = io.StringIO()
+        # writer = csv.DictWriter(text_io, fieldnames=cols)
+        # writer.writeheader()
+        # for rec in block_info_list:
+        #     writer.writerow({c: rec.get(c) for c in cols})
 
         # turn csv text into bytes and upload
-        csv_bytes = io.BytesIO(text_io.getvalue().encode("utf-8"))
-        csv_bytes.seek(0)
+        # csv_bytes = io.BytesIO(text_io.getvalue().encode("utf-8"))
+        # csv_bytes.seek(0)
         # # convert the entire list to a JSON string and encode it to bytes
-        # combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
+        combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
         # # create a bytesIO buffer from JSON bytes
-        # bytes_io = io.BytesIO(combined_json_bytes)
+        bytes_io = io.BytesIO(combined_json_bytes)
 
-        self._s3_explorer.upload_buffer(csv_bytes, source_path=f"cardano/blocks/{end_block_height}/cardano_blocks_{end_block_height}.csv")
+        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/{end_block_height}/cardano_blocks_{end_block_height}.csv")
 
         updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
             table=self._table,
