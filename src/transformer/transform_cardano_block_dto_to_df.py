@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 setup_logging(logger)
 
 
-class TransformCardanoBlockDTOToCSV:
+class TransformCardanoBlockDTOToDF:
     """
     Responsible for transforming a list of cardano_block_dto into a pandas DataFrame, so that it can converted to bytesIO outside of this class in main pipeline
     """
@@ -67,6 +67,6 @@ if __name__ == "__main__":
             confirmations=11754906,
             created_at=datetime(2025, 4, 21, 15, 18, 39, 630720))
     ]
-    res: pd.DataFrame = TransformCardanoBlockDTOToCSV.transform(cardano_block_dto_list=sample_blocks)
+    res: pd.DataFrame = TransformCardanoBlockDTOToDF.transform(cardano_block_dto_list=sample_blocks)
     print(res)
 
