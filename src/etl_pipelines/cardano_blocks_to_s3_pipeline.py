@@ -1,4 +1,3 @@
-import csv
 import io
 from typing import Any
 import json
@@ -51,35 +50,17 @@ class CardanoBlocksToETLPipeline:
 
         # list to collect all block data into a list of dict
         block_info_list: list[dict[str, Any]] = []
-        # TO_DO: introduce a cut off for the block numbers to stop extracting beyond it
-        # TO_DO: implement a try catch to catch blocks that could not eb extracted anymore
+        # TODO: introduce a cut off for the block numbers to stop extracting beyond it
+        # TODO: implement a try catch to catch blocks that could not be extracted anymore
         while curr_block_height <= end_block_height:
             block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
             block_info_list.append(block_info.model_dump())
             curr_block_height += 1
 
-
-        # cols = [
-        #     "time", "height", "hash", "slot", "epoch", "epoch_slot",
-        #     "slot_leader", "size", "tx_count", "output", "fees",
-        #     "block_vrf", "op_cert", "op_cert_counter",
-        #     "previous_block", "next_block", "confirmations"
-        # ]
-        # text_io = io.StringIO()
-        # writer = csv.DictWriter(text_io, fieldnames=cols)
-        # writer.writeheader()
-        # for rec in block_info_list:
-        #     writer.writerow({c: rec.get(c) for c in cols})
-
-        # turn csv text into bytes and upload
-        # csv_bytes = io.BytesIO(text_io.getvalue().encode("utf-8"))
-        # csv_bytes.seek(0)
-        # # convert the entire list to a JSON string and encode it to bytes
         combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
-        # # create a bytesIO buffer from JSON bytes
+        # create a bytesIO buffer from JSON bytes
         bytes_io = io.BytesIO(combined_json_bytes)
-
-        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/{end_block_height}/cardano_blocks_{end_block_height}.csv")
+        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/raw/{end_block_height}/cardano_blocks_raw/{end_block_height}.json")
 
         updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
             table=self._table,
@@ -119,8 +100,9 @@ def run():
 if __name__ == "__main__":
     run()
 
+
 """
-TO_DO:
+TODO:
 write an integration test to:
 1. write the interface/function signature
 2. write the rests; tests will fail since implementation is missing
