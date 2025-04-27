@@ -18,11 +18,11 @@ from src.models.database_transfer_objects.provider_to_s3_import_status import Pr
 class CardanoBlockTransactionsToETLPipeline:
     """
     Responsible for:
-    - checking if last block height from block_transactions table in database < latest block in provider_to_s3_import_status_table with cardano_block_transactions column
-    - extracting raw cardano block transactions from Blockfrost in batches of 1000
+    - checking if last block height from block_transactions in database < latest block in provider_to_s3_import_status_table with cardano_block_transactions column vs cardano_block_column
+    - extracting raw cardano block transactions from Blockfrost in batches of 2000
     - convert list of extracted block transactions data (dict type) to json -> bytes
     - upload extracted data to S3 in json format
-    - udpate provider_to_s3 import_status table with latest block_number for columns with cardano_block_transactions
+    - update provider_to_s3 import_status table with latest block_number for columns with cardano_block_transactions
     """
     def __init__(
         self,
@@ -41,8 +41,9 @@ class CardanoBlockTransactionsToETLPipeline:
     async def run(self) -> None:
         """
         To check which block to start ingesting from:
-        - compare last block_height of cardano_blocks column of s3_to_db_import_status_table VS last block_height of cardano_block_transactions provider_to_s3_import_status_table from database
-        if cardano_blocks_tx_last_height >= cardano_blocks_last_height: do nothing
+        - compare last block_height of cardano_blocks column of provider_to_s3_import_status
+          VS last block_height of cardano_block_transactions column of provider_to_s3_import_status_table from database
+        - if cardano_blocks_tx_last_height >= cardano_blocks_last_height: do nothing
         else:
             start_block = provider_to_s3_import_status_table.read_latest_import_status("cardano_block_transactions) + 1
             end_block = provider_to_s3_import_status_table.read_latest_import_status("cardano_blocks)
@@ -54,45 +55,48 @@ class CardanoBlockTransactionsToETLPipeline:
         )
         print(f"blocks_tx_latest_block_height = {blocks_tx_latest_block_height}")
         blocks_latest_block_height: int | None = (
-            await self._s3_to_db_import_status_dao.read_latest_import_status(
+            await self._provider_to_s3_import_status_dao.read_latest_import_status(
                 "cardano_blocks"
             )
         )
         print(f"blocks_latest_block_height = {blocks_latest_block_height}")
-        if blocks_tx_latest_block_height >= blocks_latest_block_height:
+        if blocks_tx_latest_block_height and blocks_latest_block_height and blocks_tx_latest_block_height >= blocks_latest_block_height:
             print(f"block transactions in S3 up to date")
             return None
 
-        # num_of_blocks: int = 500
-        # start_block_height: int = (latest_block_height + 1) or 11292700
-
-        start_block_height: int = blocks_tx_latest_block_height or 1
+        start_block_height: int = blocks_tx_latest_block_height+1 or 1
         print(f"start_block_height = {start_block_height}")
         end_block_height: int = blocks_latest_block_height
         print(f"end block height = {end_block_height}")
-        curr_block_height: int = start_block_height
         # list to collect all block transactions data into a list of dict
         block_tx_info_list: list[dict[str, Any]] = []
-        print(block_tx_info_list)
-        while curr_block_height <= end_block_height:
-            block_tx_info: CardanoBlockTransactions = await self._extractor.get_block_transactions(str(curr_block_height))
-            block_tx_info_list.append(block_tx_info.model_dump())
-            curr_block_height += 1
 
-        # convert the entire list to a JSON string and encode it to bytesIO
-        combined_json_bytes = json.dumps(block_tx_info_list).encode('utf-8')
-        bytes_io = io.BytesIO(combined_json_bytes)
+        # chunk all of these into the while loop and limit each json batch file to 2000 blocks
+        batch_limit: int = 2000
+        curr: int = start_block_height
+        while curr <= end_block_height:
+            end_batch: int = min(curr+batch_limit-1, end_block_height)
+            # fetch and collect up to batch limit blocks
+            for height in range(curr, end_batch+1):
+                block_tx_info: CardanoBlockTransactions = await self._extractor.get_block_transactions(str(height))
+                block_tx_info_list.append(block_tx_info.model_dump())
 
-        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/block_transactions/{end_block_height}/cardano_blocks_tx{end_block_height}.json")
+            # convert the entire list to a JSON string and encode it to bytesIO
+            combined_json_bytes = json.dumps(block_tx_info_list).encode('utf-8')
+            bytes_io = io.BytesIO(combined_json_bytes)
 
-        updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
-            table=self._table,
-            block_height=end_block_height,
-            created_at=datetime.utcnow(),
-        )
-        await self._provider_to_s3_import_status_dao.insert_latest_import_status(
-            updated_s3_import_status
-        )
+            self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/block_tx/raw/{end_batch}/cardano_blocks_tx_raw{end_batch}.json")
+
+            updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
+                table=self._table,
+                block_height=end_batch,
+                created_at=datetime.utcnow(),
+            )
+            await self._provider_to_s3_import_status_dao.insert_latest_import_status(
+                updated_s3_import_status
+            )
+            print(f"Uploaded batch ending at block: {end_batch}")
+            curr = end_batch+1
 
 
 def run():
