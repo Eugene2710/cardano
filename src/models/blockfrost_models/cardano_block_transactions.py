@@ -13,9 +13,12 @@ class CardanoBlockTransactions(BaseModel):
       "e8073fd5318ff43eca18a852527166aa8008bee9ee9e891f585612b7e4ba700b"
     ]
     """
-
+    block_height: int
     tx_hash: list[str]
 
     @staticmethod
-    def from_json(input: list[str]) -> "CardanoBlockTransactions":
-        return CardanoBlockTransactions(tx_hash=input)
+    def from_json(block_height: int, input: list[str]) -> "CardanoBlockTransactions":
+        return CardanoBlockTransactions(
+            block_height=block_height,
+            tx_hash=input
+        )
