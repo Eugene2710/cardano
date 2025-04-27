@@ -28,7 +28,10 @@ class CardanoBlockTransactionsExtractor:
             async with client.get(url=url, headers=headers) as response:
                 if response.status == 200:
                     data: list[str] = await response.json()
-                    cardano_block_transaction: CardanoBlockTransactions = CardanoBlockTransactions.from_json(data)
+                    cardano_block_transaction: CardanoBlockTransactions = CardanoBlockTransactions.from_json(
+                        block_height=block_height,
+                        input=data
+                    )
                     return cardano_block_transaction
 
                 else:
