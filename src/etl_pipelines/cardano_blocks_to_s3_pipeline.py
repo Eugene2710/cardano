@@ -44,7 +44,8 @@ class CardanoBlocksToETLPipeline:
         )
 
         num_of_blocks: int = 1000
-        start_block_height: int = (latest_block_height+1) or 11292700
+        # start_block_height: int = (latest_block_height+1) or 11292700
+        start_block_height: int = 11292700
         end_block_height: int = start_block_height+num_of_blocks-1
         curr_block_height: int = start_block_height
 
