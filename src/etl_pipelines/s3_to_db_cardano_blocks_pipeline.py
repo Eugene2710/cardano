@@ -79,23 +79,22 @@ class S3ToDBCardanoBlocksETLPipeline:
             self._s3_raw_blocks_path, default_modified_date
         )
 
-        async with self._engine.begin() as conn:
+        for raw_file_info in s3_raw_blocks_file_info:
+            latest_raw_blocks_file_modified_date = max(
+                default_modified_date, raw_file_info.modified_date
+            )
+            print(latest_raw_blocks_file_modified_date)
+            # get raw blocks json files from S3 and change it to CardanoBlocksDTO
+            block_dto_list: list[CardanoBlocksDTO] = self._extractor.get_block_from_s3(s3_path=raw_file_info.file_path)
 
-            for raw_file_info in s3_raw_blocks_file_info:
-                latest_raw_blocks_file_modified_date = max(
-                    default_modified_date, raw_file_info.modified_date
-                )
-                # get raw blocks json files from S3 and change it to CardanoBlocksDTO
-                block_dto_list: list[CardanoBlocksDTO] = await self._extractor.get_block_from_s3(s3_path=raw_file_info.file_path)
-
-                # transform the dto list to a dataframe
-                df: pd.DataFrame = self._transformer.transform(block_dto_list)
-                # convert pandas dataframe into a csv bytesIO
-                csv_buffer: BytesIO = BytesIO()
-                df.to_csv(csv_buffer, index=False)
-                csv_buffer.seek(0)
-                # upload transformed CardanoblocksDTO in csv format to s3
-                self._s3_explorer.upload_buffer(bytes_io=csv_buffer, source_path=f"cardano/blocks/transformed/{latest_raw_blocks_file_modified_date}/cardano_blocks_transformed_{latest_raw_blocks_file_modified_date}.csv")
+            # transform the dto list to a dataframe
+            df: pd.DataFrame = self._transformer.transform(block_dto_list)
+            # convert pandas dataframe into a csv bytesIO
+            csv_buffer: BytesIO = BytesIO()
+            df.to_csv(csv_buffer, index=False)
+            csv_buffer.seek(0)
+            # upload transformed CardanoblocksDTO in csv format to s3
+            self._s3_explorer.upload_buffer(bytes_io=csv_buffer, source_path=f"cardano/blocks/transformed/{latest_raw_blocks_file_modified_date}/cardano_blocks_transformed_{latest_raw_blocks_file_modified_date}.csv")
 
         # list files from cardano/blocks/transformed
         s3_transformed_blocks_file_info: Generator[FileInfo, None, None] = self._s3_explorer.list_files(
