@@ -44,6 +44,7 @@ mypy = "^1.14.1"
 ruff = "^0.4.8"
 black = "^24.4.2"
 pytest = "^8.2.2"
+moto = {extras = ["s3"], version = "^5.1.4"}
 
 [build-system]
 requires = ["poetry-core"]

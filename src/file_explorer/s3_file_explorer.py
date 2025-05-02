@@ -11,20 +11,9 @@ from src.models.file_info.file_info import FileInfo
 
 
 class S3Explorer:
-    def __init__(
-        self,
-        bucket_name: str,
-        endpoint_url: str,
-        access_key_id: str,
-        secret_access_key: str,
-    ) -> None:
+    def __init__(self, bucket_name: str, client: S3Client) -> None:
         self.bucket_name: str = bucket_name
-        self._client: S3Client = boto3.client(
-            "s3",
-            endpoint_url=endpoint_url,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-        )
+        self._client: S3Client = client
 
     def upload_file(self, local_file_path: str, s3_path: str) -> None:
         """
@@ -70,11 +59,14 @@ class S3Explorer:
 
 if __name__ == "__main__":
     load_dotenv()
-    s3_explorer: S3Explorer = S3Explorer(
-        bucket_name=os.getenv("AWS_S3_BUCKET", ""),
+    client = boto3.client(
+        "s3",
         endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
-        access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
-        secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
     )
     # test: upload sample eth_blocks CSV file to specified path
     # s3_explorer.upload_file(
