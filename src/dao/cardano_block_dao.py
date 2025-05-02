@@ -142,6 +142,7 @@ class CardanoBlockDAO:
                 INSERT INTO {self._table.name} ({col_names_str})
                 SELECT {col_names_str}
                 FROM {self._temp_table_name}
+                ON CONFLICT (height) DO NOTHING
         """
         )
         await async_connection.execute(insert_clause)
