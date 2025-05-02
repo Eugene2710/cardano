@@ -4,13 +4,9 @@ import os
 from dotenv import load_dotenv
 import logging
 import pandas as pd
-from typing import Any
 from datetime import datetime
 from sqlalchemy import (Table, text)
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncConnection
-from asyncio import new_event_loop, AbstractEventLoop
-from tenacity import retry, wait_fixed, stop_after_attempt, retry_if_exception_type
 from sqlalchemy.exc import OperationalError
 
 from asyncio import new_event_loop, AbstractEventLoop
