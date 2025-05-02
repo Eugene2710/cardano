@@ -1,13 +1,12 @@
 import io
 import asyncio
 import json
-
 import os
 from typing import Any
 from dotenv import load_dotenv
 from pprint import pprint
+from retry import retry
 
-from tenacity import retry, wait_fixed, stop_after_attempt
 from src.models.blockfrost_models.raw_cardano_blocks import RawBlockfrostCardanoBlockInfo
 from src.models.database_transfer_objects.cardano_blocks import CardanoBlocksDTO
 from src.file_explorer.s3_file_explorer import S3Explorer
@@ -20,11 +19,13 @@ class CardanoBlockS3Extractor:
         self._s3_explorer: S3Explorer = s3_explorer
 
     @retry(
-        wait=wait_fixed(0.01),
-        stop=stop_after_attempt(5),
-        reraise=True,
+        tries=5,
+        delay=0.1,
+        max_delay=0.3375,
+        backoff=1.5,
+        jitter=(-0.01, 0.01),
     )
-    async def get_block_from_s3(self, s3_path: str) -> list[CardanoBlocksDTO]:
+    def get_block_from_s3(self, s3_path: str) -> list[CardanoBlocksDTO]:
         """
         - get specified json file from s3 using S3Explorer.download_to_buffer
         - add json file to database
@@ -57,8 +58,6 @@ if __name__ == "__main__":
     )
     extractor: CardanoBlockS3Extractor = CardanoBlockS3Extractor(s3_explorer=s3_explorer)
     event_loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
-    res: list[CardanoBlocksDTO] = event_loop.run_until_complete(
-        extractor.get_block_from_s3(s3_path="cardano/blocks/6000/cardano_blocks_6000.json")
-    )
+    res: list[CardanoBlocksDTO] = extractor.get_block_from_s3(s3_path="cardano/blocks/6000/cardano_blocks_6000.json")
     pprint(res)
 
