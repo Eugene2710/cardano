@@ -15,12 +15,6 @@ class S3Explorer:
         self.bucket_name: str = bucket_name
         self._client: S3Client = client
 
-    def upload_file(self, local_file_path: str, s3_path: str) -> None:
-        """
-        uploads local file to the specified s3 path
-        """
-        self._client.upload_file(local_file_path, self.bucket_name, s3_path)
-
     def upload_buffer(self, bytes_io: io.BytesIO, source_path: str) -> None:
         bytes_io.seek(0)
         self._client.upload_fileobj(bytes_io, self.bucket_name, source_path)
@@ -68,16 +62,6 @@ if __name__ == "__main__":
     s3_explorer: S3Explorer = S3Explorer(
         bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
     )
-    # test: upload sample eth_blocks CSV file to specified path
-    # s3_explorer.upload_file(
-    #     "catalyst_after_extracting_team_names.csv",
-    #     "cardano/catalyst/2025/03/30/catalyst_20250106.csv",
-    # )
-    #
-    # s3_explorer.upload_buffer(
-    #     bytes_io=io.BytesIO(b"test"),
-    #     source_path="cardano/catalyst/2025/03/30/catalyst_20250107.csv"
-    # )
     files_to_read: Generator[FileInfo, None, None] = s3_explorer.list_files(
         "cardano/blocks", datetime(year=2020, month=1, day=1)
     )
