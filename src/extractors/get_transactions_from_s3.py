@@ -2,6 +2,7 @@ import io
 import json
 import os
 from typing import Any
+import boto3
 from dotenv import load_dotenv
 from pprint import pprint
 from retry import retry
@@ -69,11 +70,14 @@ class CardanoTransactionsS3Extractor:
 
 if __name__ == "__main__":
     load_dotenv()
-    s3_explorer: S3Explorer = S3Explorer(
-        bucket_name=os.getenv("AWS_S3_BUCKET", ""),
+    client = boto3.client(
+        "s3",
         endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
-        access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
-        secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
     )
     extractor: CardanoTransactionsS3Extractor = CardanoTransactionsS3Extractor(s3_explorer=s3_explorer)
     tx_res: list[CardanoTransactionsDTO] = extractor.get_tx_from_s3(s3_path="cardano/transactions/raw/11292900/cardano_transactions_11292900.json")

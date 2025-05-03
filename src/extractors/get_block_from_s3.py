@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 from typing import Any
+import boto3
 from dotenv import load_dotenv
 from pprint import pprint
 from retry import retry
@@ -50,11 +51,14 @@ class CardanoBlockS3Extractor:
 
 if __name__ == "__main__":
     load_dotenv()
-    s3_explorer: S3Explorer = S3Explorer(
-        bucket_name=os.getenv("AWS_S3_BUCKET", ""),
+    client = boto3.client(
+        "s3",
         endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
-        access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
-        secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
     )
     extractor: CardanoBlockS3Extractor = CardanoBlockS3Extractor(s3_explorer=s3_explorer)
     event_loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()

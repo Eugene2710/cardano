@@ -11,26 +11,9 @@ from src.models.file_info.file_info import FileInfo
 
 
 class S3Explorer:
-    def __init__(
-        self,
-        bucket_name: str,
-        endpoint_url: str,
-        access_key_id: str,
-        secret_access_key: str,
-    ) -> None:
+    def __init__(self, bucket_name: str, client: S3Client) -> None:
         self.bucket_name: str = bucket_name
-        self._client: S3Client = boto3.client(
-            "s3",
-            endpoint_url=endpoint_url,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-        )
-
-    def upload_file(self, local_file_path: str, s3_path: str) -> None:
-        """
-        uploads local file to the specified s3 path
-        """
-        self._client.upload_file(local_file_path, self.bucket_name, s3_path)
+        self._client: S3Client = client
 
     def upload_buffer(self, bytes_io: io.BytesIO, source_path: str) -> None:
         bytes_io.seek(0)
@@ -70,22 +53,15 @@ class S3Explorer:
 
 if __name__ == "__main__":
     load_dotenv()
-    s3_explorer: S3Explorer = S3Explorer(
-        bucket_name=os.getenv("AWS_S3_BUCKET", ""),
+    client = boto3.client(
+        "s3",
         endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
-        access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
-        secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
     )
-    # test: upload sample eth_blocks CSV file to specified path
-    # s3_explorer.upload_file(
-    #     "catalyst_after_extracting_team_names.csv",
-    #     "cardano/catalyst/2025/03/30/catalyst_20250106.csv",
-    # )
-    #
-    # s3_explorer.upload_buffer(
-    #     bytes_io=io.BytesIO(b"test"),
-    #     source_path="cardano/catalyst/2025/03/30/catalyst_20250107.csv"
-    # )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
+    )
     files_to_read: Generator[FileInfo, None, None] = s3_explorer.list_files(
         "cardano/blocks", datetime(year=2020, month=1, day=1)
     )

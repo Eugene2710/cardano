@@ -3,6 +3,8 @@ import json
 import os
 from asyncio import AbstractEventLoop, new_event_loop
 from datetime import datetime
+
+import boto3
 from dotenv import load_dotenv
 from sqlalchemy import select, Select
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -125,11 +127,14 @@ class CardanoTransactionsTOETLPipeline:
 
 def run():
     load_dotenv()
-    s3_explorer: S3Explorer = S3Explorer(
-        bucket_name=os.getenv("AWS_S3_BUCKET", ""),
+    client = boto3.client(
+        "s3",
         endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
-        access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
-        secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
     )
     provider_to_s3_import_status_dao: ProviderToS3ImportStatusDAO = ProviderToS3ImportStatusDAO(
         os.getenv("ASYNC_PG_CONNECTION_STRING", "")
