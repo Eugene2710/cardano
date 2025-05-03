@@ -83,7 +83,7 @@ class S3ToDBCardanoBlockTransactionsETLPipeline:
                 default_modified_date, raw_file_info.modified_date
             )
             # get raw block tx json files from S3 and change it to CardanoBlockTransactionsDTO
-            block_tx_dto_list: list[CardanoBlocksTransactionsDTO] = await self._extractor.get_block_transactions_from_s3(
+            block_tx_dto_list: list[CardanoBlocksTransactionsDTO] = self._extractor.get_block_transactions_from_s3(
                 s3_path=raw_file_info.file_path,
             )
             # transform the dto list to a dataframe
