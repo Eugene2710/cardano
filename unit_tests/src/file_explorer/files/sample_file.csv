@@ -1,2 +1,3 @@
-instrument,timestamp,price,created_at
-A,2025-05-02 00:00:00,1.00,2025-05-02 00:00:00
+version https://git-lfs.github.com/spec/v1
+oid sha256:56be67826b10dfdfc79a30d188cc5607e0bfd96ed9337a9867222199faac2cc0
+size 84
