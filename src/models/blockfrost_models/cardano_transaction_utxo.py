@@ -29,7 +29,6 @@ class TransactionInput(BaseModel):
     inline_datum: str | None = None
     reference_script_hash: str | None = None
     collateral: bool
-    collateral: bool
 
 
 class TransactionOutput(BaseModel):
@@ -43,26 +42,26 @@ class TransactionOutput(BaseModel):
     consumed_by_tx: str | None = None
 
 
-class TranscationUTxO(BaseModel):
+class TransactionUTxO(BaseModel):
     """
     the top level model for Transaction UTxO
     """
 
     hash: str
     inputs: list[TransactionInput]
-    output: list[TransactionOutput]
+    outputs: list[TransactionOutput]
 
     @staticmethod
-    def from_json(data: dict[str, Any]) -> "TranscationUTxO":
-        return TranscationUTxO.model_validate(
+    def from_json(data: dict[str, Any]) -> "TransactionUTxO":
+        return TransactionUTxO.model_validate(
             {
                 **input,
                 "inputs": [
-                    TranscationUTxO.from_json(single_input)
+                    TransactionUTxO.from_json(single_input)
                     for single_input in data["inputs"]
                 ],
                 "outputs": [
-                    TranscationUTxO.from_json(single_output)
+                    TransactionUTxO.from_json(single_output)
                     for single_output in data["outputs"]
                 ],
             }
