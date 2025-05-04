@@ -40,7 +40,7 @@ class CardanoTransactionsDTO(BaseModel):
             hash=input.hash,
             block=input.block,
             block_height=input.block_height,
-            block_time=input.block_time,
+            block_time=datetime.utcfromtimestamp(input.block_time),
             delegation_count=input.delegation_count,
             deposit=input.deposit,
             fees=input.fees,
