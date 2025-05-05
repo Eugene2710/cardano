@@ -21,7 +21,7 @@ metadata: MetaData = MetaData()
 cardano_block_table: Table = Table(
     "cardano_blocks",
     metadata,
-    Column("time", DateTime, nullable=False),
+    Column("time",  DateTime, nullable=False),
     Column("height", Integer, primary_key=True),
     Column("hash", String, nullable=False),  # block hash
     Column("slot", Integer, nullable=False),
@@ -71,7 +71,7 @@ cardano_transactions_table: Table = Table(
         Integer,
         nullable=False,
     ),  # block number
-    Column("block_time", Integer, nullable=False),  # unix timestamp
+    Column("block_time",  DateTime, nullable=False),
     Column("slot", Integer, nullable=False),
     Column("index", Integer, nullable=False),  # tx index within block
     Column("fees", String, nullable=False),
@@ -88,7 +88,7 @@ cardano_transactions_table: Table = Table(
     Column("pool_retire_count", Integer, nullable=False),
     Column("asset_mint_or_burn_count", Integer, nullable=False),
     Column("redeemer_count", Integer, nullable=False),
-    Column("valid_contract", Integer, nullable=False),
+    Column("valid_contract", Boolean, nullable=False),
     Column(
         "created_at",
         DateTime(timezone=False),
@@ -121,7 +121,6 @@ cardano_tx_utxo_table: Table = Table(
     "cardano_tx_utxo",
     metadata,
     Column("hash", String, primary_key=True),
-    Column("block_height", Integer, nullable=False),
     Column(
         "created_at",
         DateTime(timezone=False),
@@ -209,7 +208,7 @@ cardano_tx_utxo_output_amount_table: Table = Table(
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4()),
     Column(
-        "tx_utxo_hash",
+        "data_hash",
         String,
         nullable=False,
     ),
