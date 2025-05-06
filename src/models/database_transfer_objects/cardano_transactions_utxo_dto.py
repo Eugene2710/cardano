@@ -7,9 +7,11 @@ from src.models.blockfrost_models.cardano_transaction_utxo import TransactionUTx
 
 class TxAmountDTO(BaseModel):
     id: uuid.UUID
+    parent_id: uuid.UUID
     tx_utxo_hash: str
     unit: str
     quantity: str
+    created_at: datetime
 
 
 class CardanoTxUtxoInputDTO(BaseModel):
@@ -47,7 +49,6 @@ class CardanoTransactionUtxoDTO(BaseModel):
     - include a created_at column of type datetime to specify the time cardano transaction utxo was ingested
     """
     hash: str # tx_hash
-    # block_height: int
     created_at: datetime
     inputs: list[CardanoTxUtxoInputDTO]
     outputs: list[CardanoTxUtxoOutputDTO]
@@ -57,17 +58,20 @@ class CardanoTransactionUtxoDTO(BaseModel):
         parent_hash = hash
         input_dtos: list[CardanoTxUtxoInputDTO] = []
         for inp in input.inputs:
+            input_id = uuid.uuid4()
             amounts = [
                 TxAmountDTO(
                     id=uuid.uuid4(),
+                    parent_id=input_id,
                     tx_utxo_hash=inp.tx_hash,
                     unit=a.unit,
                     quantity=a.quantity,
+                    created_at=datetime.utcnow()
                 ) for a in inp.amount
             ]
             input_dtos.append(
                 CardanoTxUtxoInputDTO(
-                    id=uuid.uuid4(),
+                    id=input_id,
                     hash=parent_hash,
                     address=inp.address,
                     tx_utxo_hash=inp.tx_hash,
@@ -84,17 +88,20 @@ class CardanoTransactionUtxoDTO(BaseModel):
 
         output_dtos: list[CardanoTxUtxoOutputDTO] = []
         for out in input.outputs:
+            output_id = uuid.uuid4()
             amounts = [
                 TxAmountDTO(
                     id=uuid.uuid4(),
+                    parent_id=output_id,
                     tx_utxo_hash=parent_hash,
                     unit=a.unit,
                     quantity=a.quantity,
+                    created_at=datetime.utcnow()
                 ) for a in out.amount
             ]
             output_dtos.append(
                 CardanoTxUtxoOutputDTO(
-                    id=uuid.uuid4(),
+                    id=output_id,
                     hash=parent_hash,
                     address=out.address,
                     output_index=out.output_index,
