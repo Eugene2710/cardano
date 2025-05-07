@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import logging
+from typing import Any
 from src.utils.logging_utils import setup_logging
 from src.models.database_transfer_objects.cardano_transactions import CardanoTransactionsDTO
 
@@ -15,9 +16,9 @@ class TransformCardanoTransactionsDTOToDf:
     """
     @staticmethod
     def transform(cardano_tx_dto_list: list[CardanoTransactionsDTO]) -> pd.DataFrame:
-        records: list[dict] = []
+        records: list[dict[str, Any]] = []
         for dto in cardano_tx_dto_list:
-            record: dict = {
+            record: dict[str, Any] = {
                 "hash": dto.hash,
                 "block": dto.block,
                 "block_height": dto.block_height,
