@@ -50,7 +50,6 @@ class TransformCardanoTxUtxoDTOToDf:
                         {
                             "id": amt.id,
                             "parent_id": inp.id,
-                            "tx_utxo_hash": amt.tx_utxo_hash,
                             "unit": amt.unit,
                             "quantity": amt.quantity,
                             "created_at": amt.created_at,
@@ -77,7 +76,6 @@ class TransformCardanoTxUtxoDTOToDf:
                         {
                             "id": amt.id,
                             "parent_id": out.id,
-                            "data_hash": out.data_hash,
                             "unit": amt.unit,
                             "quantity": amt.quantity,
                             "created_at": amt.created_at,
@@ -122,7 +120,6 @@ if __name__ == "__main__":
                         TxAmountDTO(
                             id=UUID('fe7474fe-5c1d-445e-b28d-83822a3f56d0'),
                             parent_id=UUID('deff8d2e-a1a7-4c74-b2e2-eb2877c32f2a'),
-                            tx_utxo_hash='a000c3044fca0ee824ec532c5cebe23a5ff05da31bce16c9cac4d07e0f0d3bde',
                             unit='lovelace',
                             quantity='26015021282',
                             created_at = datetime(2025, 5, 4, 18, 15, 47, 731546),
@@ -146,7 +143,6 @@ if __name__ == "__main__":
                         TxAmountDTO(
                             id=UUID('4e16edf9-31d6-4c72-82db-56525ab6ae27'),
                             parent_id=UUID('498520d9-e1fc-4203-b25c-50d591b837db'),
-                            tx_utxo_hash='5924322a9ceb1d804cca62846310d69ff0ffa175f302923316dece025e404785',
                             unit='lovelace',
                             quantity='10000000000',
                             created_at=datetime(2025, 5, 4, 18, 15, 47, 731546),
@@ -168,7 +164,6 @@ if __name__ == "__main__":
                         TxAmountDTO(
                             id=UUID('52fcb965-3b5d-4e10-9e05-4dfa431f0c21'),
                             parent_id=UUID('e46e138c-1667-46a6-99dd-02da97acff47'),
-                            tx_utxo_hash='5924322a9ceb1d804cca62846310d69ff0ffa175f302923316dece025e404785',
                             unit='lovelace',
                             quantity='16014145005',
                             created_at=datetime(2025, 5, 4, 18, 15, 47, 731546),
@@ -197,7 +192,6 @@ if __name__ == "__main__":
                         TxAmountDTO(
                             id=UUID('50a3d0e9-a51d-45bd-9e66-ba60638c31a1'),
                             parent_id=UUID('c465e035-91b5-4c0d-a573-7da2f49b2bcd'),
-                            tx_utxo_hash='c11d56b1e27b46c77c4b1a5a6173544f062789f08230feabf9bc74a2b231b729',
                             unit='lovelace',
                             quantity='89700000',
                             created_at=datetime(2025, 5, 4, 18, 15, 47, 731546),
@@ -221,7 +215,6 @@ if __name__ == "__main__":
                         TxAmountDTO(
                             id=UUID('d707457a-2f8c-415a-b18f-9bdc1568ecfd'),
                             parent_id=UUID('bf3ad5c5-e12f-4dd2-8dd4-adac0f1e1974'),
-                            tx_utxo_hash='f3097e962455cfee841e9e5b242b79168d7a5934db32cb0e186b1ee213d0599e',
                             unit='lovelace',
                             quantity='89528427',
                             created_at=datetime(2025, 5, 4, 18, 15, 47, 731546),
