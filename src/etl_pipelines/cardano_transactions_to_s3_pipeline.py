@@ -71,11 +71,11 @@ class CardanoTransactionsTOETLPipeline:
             print(f"transactions in S3 up to date")
             return None
 
-        # start_block_height: int = tx_latest_block_height + 1 or 1
-        start_block_height: int = 11292700
+        start_block_height: int = tx_latest_block_height + 1
+        # start_block_height: int = 11292700
         print(f"start_block_height = {start_block_height}")
         # end_block_height: int = blocks_tx_latest_block_height
-        end_block_height: int = start_block_height+200
+        end_block_height: int = start_block_height+500
         print(f"end block height = {end_block_height}")
         # list to collect all  transactions data into a list of dict
         tx_info_list: list[CardanoTransactions] = []
