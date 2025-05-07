@@ -2,15 +2,15 @@ import uuid
 
 from pydantic import BaseModel
 from datetime import datetime
+from decimal import Decimal
 from src.models.blockfrost_models.cardano_transaction_utxo import TransactionUTxO
 
 
 class TxAmountDTO(BaseModel):
     id: uuid.UUID
     parent_id: uuid.UUID
-    tx_utxo_hash: str
     unit: str
-    quantity: str
+    quantity: Decimal
     created_at: datetime
 
 
@@ -63,7 +63,6 @@ class CardanoTransactionUtxoDTO(BaseModel):
                 TxAmountDTO(
                     id=uuid.uuid4(),
                     parent_id=input_id,
-                    tx_utxo_hash=inp.tx_hash,
                     unit=a.unit,
                     quantity=a.quantity,
                     created_at=datetime.utcnow()
@@ -93,7 +92,6 @@ class CardanoTransactionUtxoDTO(BaseModel):
                 TxAmountDTO(
                     id=uuid.uuid4(),
                     parent_id=output_id,
-                    tx_utxo_hash=parent_hash,
                     unit=a.unit,
                     quantity=a.quantity,
                     created_at=datetime.utcnow()
@@ -116,7 +114,7 @@ class CardanoTransactionUtxoDTO(BaseModel):
             )
 
         return CardanoTransactionUtxoDTO(
-            hash=input.hash,
+            hash=hash,
             created_at=datetime.utcnow(),
             inputs=input_dtos,
             outputs=output_dtos,
