@@ -9,7 +9,8 @@ from sqlalchemy import (
     Integer,
     UUID,
     Boolean,
-    func
+    func,
+    Numeric
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -108,7 +109,7 @@ cardano_tx_output_amount_table: Table = Table(
         nullable=False,
     ),  # transaction hash
     Column("unit", String, nullable=False),
-    Column("quantity", String, nullable=False),
+    Column("quantity", Numeric(38, 0), nullable=False),
     Column(
         "created_at",
         DateTime(timezone=False),
@@ -136,6 +137,7 @@ cardano_tx_utxo_input_table: Table = Table(
     Column(
         "hash",
         String,
+        ForeignKey("cardano_transactions.hash", name="fk_utxo_input_tx"),
         nullable=False,
     ),  # transaction hash
     Column("address", String, nullable=False),  # input address
@@ -162,13 +164,9 @@ cardano_tx_utxo_input_amount_table: Table = Table(
     "cardano_tx_utxo_input_amount",
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4()),
-    Column(
-        "tx_utxo_hash",
-        String,
-        nullable=False,
-    ),  # known as tx_hash in Blockfrost doc, but is referring to the utxo hash of the tx
+    Column("parent_id", UUID(as_uuid=True), ForeignKey("cardano_tx_utxo_input.id", name="fk_utxo_input_amt_parent"), nullable=False),
     Column("unit", String, nullable=False),
-    Column("quantity", String, nullable=False),
+    Column("quantity", Numeric(38, 0), nullable=False),
     Column(
         "created_at",
         DateTime(timezone=False),
@@ -184,6 +182,7 @@ cardano_tx_utxo_output_table: Table = Table(
     Column(
         "hash",
         String,
+        ForeignKey("cardano_transactions.hash", name="fk_utxo_output_tx"),
         nullable=False,
     ),
     Column("address", String, nullable=False),
@@ -207,13 +206,9 @@ cardano_tx_utxo_output_amount_table: Table = Table(
     "cardano_tx_utxo_output_amount",
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4()),
-    Column(
-        "data_hash",
-        String,
-        nullable=False,
-    ),
+    Column("parent_id", UUID(as_uuid=True), ForeignKey("cardano_tx_utxo_output.id", name="fk_utxo_output_amt_parent"), nullable=False),
     Column("unit", String, nullable=False),
-    Column("quantity", String, nullable=False),
+    Column("quantity", Numeric(38, 0), nullable=False),
     Column(
         "created_at",
         DateTime(timezone=False),
