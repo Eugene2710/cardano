@@ -1,7 +1,8 @@
 import io
 from io import BytesIO
-from datetime import datetime, timezone
+from datetime import datetime
 import os
+import boto3
 import pandas as pd
 from dotenv import load_dotenv
 from asyncio import AbstractEventLoop, new_event_loop
@@ -70,7 +71,7 @@ class S3ToDBCardanoTransactionsETLPipeline:
                 default_modified_date, raw_file_info.modified_date
             )
             # get raw tx json file from  S3 and change it to CardanoTransactionsDTO
-            tx_dto_list: list[CardanoTransactionsDTO] = await self._extractor.get_tx_from_s3(
+            tx_dto_list: list[CardanoTransactionsDTO] = self._extractor.get_tx_from_s3(
                 s3_path=raw_file_info.file_path
             )
             # transform the dto list to a dataframe
@@ -117,11 +118,14 @@ def run():
     Responsible for running ETLpipeline
     """
     load_dotenv()
-    s3_explorer: S3Explorer = S3Explorer(
-        bucket_name=os.getenv("AWS_S3_BUCKET", ""),
+    client = boto3.client(
+        "s3",
         endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
-        access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
-        secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
     )
     s3_to_db_import_status_dao: S3ToDbImportStatusDAO = S3ToDbImportStatusDAO(
         os.getenv("ASYNC_PG_CONNECTION_STRING", "")
