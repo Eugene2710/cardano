@@ -71,9 +71,7 @@ class CardanoTxUtxoDAO:
         # rewind and prepare column list without created_at
         data_buffer.seek(0)
         columns: list[str] = [col.name for col in self._table.columns]
-        df: pd.DataFrame = pd.read_csv(data_buffer, encoding="utf-8-sig" )
-        print("[DEBUG] raw columns:", [repr(c) for c in df.columns])
-        df.columns = df.columns.str.replace(r"[\x00-\x1F]", "", regex=True).str.strip()
+        df: pd.DataFrame = pd.read_csv(data_buffer, encoding="utf-8-sig")
         df = df[columns]
 
         new_buffer: BytesIO = io.BytesIO()

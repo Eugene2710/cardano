@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 setup_logging(logger)
 
 
-class CardanoTxUtxoSubDAO:
+class CardanoTxUtxoInputAmtDAO:
     """
     Responsible for inserting a list of CardanoTransactionUtxoDTO into DB
     """
@@ -63,18 +63,32 @@ class CardanoTxUtxoSubDAO:
         stop=stop_after_attempt(5),
         reraise=True,
     )
-    async def copy_tx_utxo_to_db(self, async_connection: AsyncConnection, data_buffer: BytesIO) -> None:
+    async def copy_tx_utxo_input_amt_to_db(self, async_connection: AsyncConnection, data_buffer: BytesIO) -> None:
         # this 'raw_adapt' is not the real asyncpg.Connection:
         raw_adapt = await async_connection.get_raw_connection()
         # ***WARNING***: private attribute; can break in future SQLAlchemy versions
         actual_asyncpg_conn = raw_adapt._connection
 
-        # rewind and prepare column list without created_at
+        # 1. Read and sanitise csv into DataFrame
         data_buffer.seek(0)
-        columns: list[str] = [col.name for col in self._table.columns]
-        df: pd.DataFrame = pd.read_csv(data_buffer)
-        df = df[columns]
+        df: pd.DataFrame = pd.read_csv(data_buffer, dtype=str, encoding="utf-8-sig")
+        # Remove non‑printable characters / trim spaces from header names
+        df.columns = (
+            df.columns.str.replace(r"[\x00-\x1F]", "", regex=True)
+            .str.strip()
+        )
 
+        # 2. Re-order columns to match DB table's physical order
+        expected_columns: list[str] = [col.name for col in self._table.columns]
+        missing = set(expected_columns) - set(df.columns)
+        if missing:
+            raise ValueError(
+                f"CSV is missing required column(s): {', '.join(sorted(missing))}"
+            )
+        copy_columns: list[str] = list(df.columns)
+        df = df[copy_columns]
+
+        # 3. Stream with COPY -> temp table
         new_buffer: BytesIO = io.BytesIO()
         df.to_csv(new_buffer, index=False, header=True)
         new_buffer.seek(0)
@@ -82,23 +96,23 @@ class CardanoTxUtxoSubDAO:
         await actual_asyncpg_conn.copy_to_table(
             table_name=self._temp_table_name,
             source=new_buffer,
-            columns=columns,
+            columns=copy_columns,
             format="csv",
             header=True,
         )
-        col_names = columns
-        col_names_str = ",".join(f'"{col}"' for col in col_names)
-        print(col_names_str)
+
+        # 4. Merge temp into real table
+        col_sql = ",".join(f'"{col}"' for col in copy_columns)
         insert_clause = text(
             f"""
-                INSERT INTO {self._table.name} ({col_names_str})
-                SELECT {col_names_str}
+                INSERT INTO {self._table.name} ({col_sql})
+                SELECT {col_sql}
                 FROM {self._temp_table_name}
                 ON CONFLICT (id) DO NOTHING
             """
         )
         await async_connection.execute(insert_clause)
-        print(f"{self._table} inserted")
+        logger.info("%s → inserted %d rows", self._table.name, len(df))
 
     @property
     def table(self):
@@ -109,16 +123,16 @@ if __name__ == "__main__":
     load_dotenv()
     connection_string: str = os.getenv("ASYNC_PG_CONNECTION_STRING")
 
-    cardano_tx_utxo_sub_dao: CardanoTxUtxoSubDAO = CardanoTxUtxoSubDAO(
+    cardano_tx_utxo_sub_dao: CardanoTxUtxoInputAmtDAO = CardanoTxUtxoInputAmtDAO(
         connection_string=connection_string, table=cardano_tx_utxo_output_amount_table
     )
 
     async def run_copy_test() -> None:
         async with cardano_tx_utxo_sub_dao._engine.begin() as conn:
-            with open("cardano_tx_utxo_csv/cardano_tx_utxo_output_amt.csv", "rb") as f:
+            with open("cardano_tx_utxo_csv/cardano_tx_utxo_input_amt.csv", "rb") as f:
                 data_buffer = BytesIO(f.read())
             await cardano_tx_utxo_sub_dao.create_temp_table(async_connection=conn)
-            await cardano_tx_utxo_sub_dao.copy_tx_utxo_to_db(async_connection=conn, data_buffer=data_buffer)
+            await cardano_tx_utxo_sub_dao.copy_tx_utxo_input_amt_to_db(async_connection=conn, data_buffer=data_buffer)
             print("Copied to database successfully")
 
     event_loop: AbstractEventLoop = new_event_loop()

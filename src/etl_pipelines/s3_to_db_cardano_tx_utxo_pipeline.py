@@ -18,6 +18,7 @@ from src.models.database_transfer_objects.s3_to_db_import_status_dto import S3To
 from src.transformer.transform_cardano_tx_utxo_dto_to_df import TransformCardanoTxUtxoDTOToDf
 from src.dao.cardano_tx_utxo_dao import CardanoTxUtxoDAO
 from src.dao.cardano_tx_utxo_sub_dao import CardanoTxUtxoSubDAO
+from src.dao.cardano_tx_utxo_input_amount_dao import CardanoTxUtxoInputAmtDAO
 from database_management.cardano.cardano_tables import cardano_tx_utxo_input_table, cardano_tx_utxo_input_amount_table, cardano_tx_utxo_output_table, cardano_tx_utxo_output_amount_table
 
 
@@ -46,7 +47,7 @@ class S3ToDBCardanoTxUtxoETLPipeline:
             cardano_tx_utxo_output_dao: CardanoTxUtxoSubDAO,
             cardano_tx_utxo_output_amt_dao: CardanoTxUtxoSubDAO,
             cardano_tx_utxo_input_dao: CardanoTxUtxoSubDAO,
-            cardano_tx_utxo_input_amt_dao: CardanoTxUtxoSubDAO,
+            cardano_tx_utxo_input_amt_dao: CardanoTxUtxoInputAmtDAO,
 
     ) -> None:
         self._s3_to_db_import_status_dao: S3ToDbImportStatusDAO = s3_to_db_import_status_dao
@@ -142,58 +143,62 @@ class S3ToDBCardanoTxUtxoETLPipeline:
             # create temp table
             await self._cardano_tx_utxo_dao.create_temp_table(async_connection=conn)
             # get all files from s3 cardano/transaction_utxo/transformed path
-            for transformed_file_info in s3_transformed_tx_utxo_file_info:
+            for utxo_transformed_file_info in s3_transformed_tx_utxo_file_info:
                 latest_transformed_tx_utxo_file_modified_date = max(
-                    default_modified_date, transformed_file_info.modified_date
+                    default_modified_date, utxo_transformed_file_info.modified_date
                 )
                 print(latest_transformed_tx_utxo_file_modified_date)
-                print("key fetched:", transformed_file_info.file_path)
+                print("key fetched:", utxo_transformed_file_info.file_path)
                 # download CardanoTxUtxoDTO csv files from S3 to buffer and copy to DB
                 csv_bytes: io.BytesIO = self._s3_explorer.download_to_buffer(
-                    transformed_file_info.file_path
+                    utxo_transformed_file_info.file_path
                 )
-                csv_bytes.seek(0)
-                print("peek:", transformed_file_info.file_path,
+                print("peek:", utxo_transformed_file_info.file_path,
                       "→", csv_bytes.getvalue()[:120])
                 await self._cardano_tx_utxo_dao.copy_tx_utxo_to_db(
                     async_connection=conn, data_buffer=csv_bytes
                 )
+                csv_bytes.seek(0)
             await self._cardano_tx_utxo_input_dao.create_temp_table(async_connection=conn)
-            for transformed_file_info in s3_transformed_tx_utxo_input_file_info:
+            for utxo_input_transformed_file_info in s3_transformed_tx_utxo_input_file_info:
                 # download  csv files from S3 to buffer and copy to DB
                 csv_bytes: io.BytesIO = self._s3_explorer.download_to_buffer(
-                    transformed_file_info.file_path
+                    utxo_input_transformed_file_info.file_path
                 )
                 await self._cardano_tx_utxo_input_dao.copy_tx_utxo_to_db(
                     async_connection=conn, data_buffer=csv_bytes
                 )
+                csv_bytes.seek(0)
             await self._cardano_tx_utxo_input_amt_dao.create_temp_table(async_connection=conn)
-            for transformed_file_info in s3_transformed_tx_utxo_input_amt_file_info:
+            for utxo_input_amt_transformed_file_info in s3_transformed_tx_utxo_input_amt_file_info:
                 # download  csv files from S3 to buffer and copy to DB
                 csv_bytes: io.BytesIO = self._s3_explorer.download_to_buffer(
-                    transformed_file_info.file_path
+                    utxo_input_amt_transformed_file_info.file_path
                 )
-                await self._cardano_tx_utxo_input_amt_dao.copy_tx_utxo_to_db(
+                await self._cardano_tx_utxo_input_amt_dao.copy_tx_utxo_input_amt_to_db(
                     async_connection=conn, data_buffer=csv_bytes
                 )
+                csv_bytes.seek(0)
             await self._cardano_tx_utxo_output_dao.create_temp_table(async_connection=conn)
-            for transformed_file_info in s3_transformed_tx_utxo_output_file_info:
+            for utxo_output_transformed_file_info in s3_transformed_tx_utxo_output_file_info:
                 # download  csv files from S3 to buffer and copy to DB
                 csv_bytes: io.BytesIO = self._s3_explorer.download_to_buffer(
-                    transformed_file_info.file_path
+                    utxo_output_transformed_file_info.file_path
                 )
                 await self._cardano_tx_utxo_output_dao.copy_tx_utxo_to_db(
                     async_connection=conn, data_buffer=csv_bytes
                 )
+                csv_bytes.seek(0)
             await self._cardano_tx_utxo_output_amt_dao.create_temp_table(async_connection=conn)
-            for transformed_file_info in s3_transformed_tx_utxo_output_amt_file_info:
+            for utxo_output_amt_transformed_file_info in s3_transformed_tx_utxo_output_amt_file_info:
                 # download  csv files from S3 to buffer and copy to DB
                 csv_bytes: io.BytesIO = self._s3_explorer.download_to_buffer(
-                    transformed_file_info.file_path
+                    utxo_output_amt_transformed_file_info.file_path
                 )
                 await self._cardano_tx_utxo_output_amt_dao.copy_tx_utxo_to_db(
                     async_connection=conn, data_buffer=csv_bytes
                 )
+                csv_bytes.seek(0)
 
             # update import status - s3_to_db_import_status table
             import_status = S3ToDBImportStatusDTO.create_import_status(
@@ -240,7 +245,7 @@ def run():
         connection_string=os.getenv("ASYNC_PG_CONNECTION_STRING", ""),
         table=cardano_tx_utxo_input_table
     )
-    cardano_tx_utxo_input_amt_dao: CardanoTxUtxoSubDAO = CardanoTxUtxoSubDAO(
+    cardano_tx_utxo_input_amt_dao: CardanoTxUtxoInputAmtDAO = CardanoTxUtxoInputAmtDAO(
         connection_string=os.getenv("ASYNC_PG_CONNECTION_STRING", ""),
         table=cardano_tx_utxo_input_amount_table
     )
@@ -251,11 +256,11 @@ def run():
         extractor=extractor,
         transformer=transformer,
         s3_explorer=s3_explorer,
-        s3_transformed_tx_utxo_path="cardano/transaction_utxo/transformed/utxo",
-        s3_transformed_tx_utxo_input_path="cardano/transaction_utxo/transformed/utxo_input",
-        s3_transformed_tx_utxo_input_amt_path="cardano/transaction_utxo/transformed/utxo_input_amount",
-        s3_transformed_tx_utxo_output_path="cardano/transaction_utxo/transformed/utxo_output",
-        s3_transformed_tx_utxo_output_amt_path="cardano/transaction_utxo/transformed/utxo_output_amount",
+        s3_transformed_tx_utxo_path="cardano/transaction_utxo/transformed/utxo/",
+        s3_transformed_tx_utxo_input_path="cardano/transaction_utxo/transformed/utxo_input/",
+        s3_transformed_tx_utxo_input_amt_path="cardano/transaction_utxo/transformed/utxo_input_amount/",
+        s3_transformed_tx_utxo_output_path="cardano/transaction_utxo/transformed/utxo_output/",
+        s3_transformed_tx_utxo_output_amt_path="cardano/transaction_utxo/transformed/utxo_output_amount/",
         cardano_tx_utxo_dao=cardano_tx_utxo_dao,
         cardano_tx_utxo_output_dao=cardano_tx_utxo_output_dao,
         cardano_tx_utxo_output_amt_dao=cardano_tx_utxo_output_amt_dao,
