@@ -1,0 +1,256 @@
+version: '3.8'
+
+services:
+  # First to execute: Spin up Postgres 14 DB
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: cardano
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/data # keep objects between restarts
+
+  # Second to execute: Perform alembic migration
+  migrations:
+    build: .
+    image: cardano
+    command: sh -c "alembic upgrade head"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_URL: postgresql://postgres:password@postgres:5432/cardano
+
+  minio:
+    image: minio/minio:RELEASE.2025-01-18T00-31-37Z
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000" # S3 API -> http://localhost:9000
+      - "9001:9001" # Web Console -> http://localhost:9001
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ] # Use minio client mc to probe readiness
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - minio-data:/data  # keep objects between restarts
+
+
+  # ——— runs ONCE, creates a user + an extra access-key, then exits ———
+  init-minio:
+    image: minio/mc:RELEASE.2025-01-17T23-25-50Z
+    depends_on:
+      minio:
+        condition: service_healthy     # wait until the health-check passes  :contentReference[oaicite:3]{index=3}
+    volumes:
+      - minio-creds:/creds
+    entrypoint: >
+      /bin/sh -c '
+        set -eu
+        mc alias set local http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+        # Create user only once
+        if ! mc admin user info local appuser > /dev/null 2>&1; then
+          APP_SECRET=$(openssl rand -hex 20)
+          mc admin user add local appuser "$APP_SECRET"
+          mc admin policy attach local readwrite --user appuser
+          mc admin accesskey create local appuser --json > /creds/minio.env.tmp
+          jq -r '"MINIO_ACCESS_KEY=" + .accessKey, "MINIO_SECRET_KEY=" + .secretKey' \
+              /creds/minio.env.tmp > /creds/minio.env
+        fi
+      '
+    environment:
+      MINIO_ROOT_USER:     minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    restart: "no"          # exits once, status 0
+
+  cardano-blocks-to-s3-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/cardano_blocks_to_s3_pipeline.py
+      '
+
+  s3-to-db-cardano-blocks-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/s3_to_db_cardano_block_transactions_pipeline.py
+      '
+
+  cardano-block-transactions-to-s3-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/cardano_block_transactions_to_s3_pipeline.py
+      '
+
+  s3-to-db-cardano-block-transactions-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/s3_to_db_cardano_block_transactions_pipeline.py
+      '
+
+  cardano-transactions-to-s3-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/cardano_transactions_to_s3_pipeline.py
+      '
+
+  s3-to-db-cardano-transactions-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/s3_to_db_cardano_transactions_pipeline.py
+      '
+
+  cardano-tx-utxo-to-s3-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/cardano_tx_utxo_to_s3_pipeline.py
+      '
+
+  s3-to-db-cardano-tx-utxo-pipeline:
+    build: .
+    image: cardano
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      init-minio:
+        condition: service_completed_successfully   # ← new gate  :contentReference[oaicite:4]{index=4}
+    environment:
+      ASYNC_PG_CONNECTION_STRING: postgresql+asyncpg://localhost:5432/cardano
+      PYTHONPATH: /app
+    volumes:
+      - minio-creds:/creds:ro
+    entrypoint: >
+      /bin/sh -c '
+        set -a                     # auto-export
+        . /creds/minio.env         # MINIO_ACCESS_KEY, MINIO_SECRET_KEY now in env
+        exec python src/etl_pipelines/s3_to_db_cardano_tx_utxo_pipeline.py
+      '
+
+volumes:
+  postgres-data:
+  minio-data:
+  minio-creds:    # ← tiny, just stores the env file
