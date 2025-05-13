@@ -47,6 +47,7 @@ class CardanoBlocksToETLPipeline:
         num_of_blocks: int = 2000
         # start_block_height: int = (latest_block_height+1) if latest_block_height else 11292700
         start_block_height: int = 11292700
+        print(f"start_block_height={start_block_height}")
         end_block_height: int = start_block_height+num_of_blocks-1
         curr_block_height: int = start_block_height
 
@@ -58,12 +59,13 @@ class CardanoBlocksToETLPipeline:
             block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
             block_info_list.append(block_info.model_dump())
             curr_block_height += 1
+            print(f"extracted from blockfrost - blockfrost api works")
 
         combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
         # create a bytesIO buffer from JSON bytes
         bytes_io = io.BytesIO(combined_json_bytes)
         self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/raw/{end_block_height}/cardano_blocks_raw/{end_block_height}.json")
-
+        print(f"uploaded file to s3")
         updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
             table=self._table,
             block_height=end_block_height,
