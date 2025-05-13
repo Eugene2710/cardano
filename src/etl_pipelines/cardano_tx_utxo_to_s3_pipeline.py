@@ -72,8 +72,8 @@ class CardanoTxUtxoToETLPipeline:
             print(f"transactions utxo in S3 up to date")
             return None
 
-        # start_block_height: int = tx_utxo_latest_block_height+1
-        start_block_height: int = 11292700
+        start_block_height: int = tx_utxo_latest_block_height+1
+        # start_block_height: int = 11292700
         print(f"start_block_height = {start_block_height}")
         end_block_height: int = tx_latest_block_height
         print(f"end block height = {end_block_height}")
@@ -81,7 +81,7 @@ class CardanoTxUtxoToETLPipeline:
         tx_utxo_info_list: list[TransactionUTxO] = []
 
         # chunk all of these into the while loop and limit each json batch file to 200 blocks
-        batch_limit: int = 500
+        batch_limit: int = 1000
         curr: int = start_block_height
         while curr <= end_block_height:
             end_batch: int = min(curr+batch_limit-1, end_block_height)
