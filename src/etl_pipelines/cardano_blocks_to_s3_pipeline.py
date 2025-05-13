@@ -59,7 +59,6 @@ class CardanoBlocksToETLPipeline:
             block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
             block_info_list.append(block_info.model_dump())
             curr_block_height += 1
-            print(f"extracted from blockfrost - blockfrost api works")
 
         combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
         # create a bytesIO buffer from JSON bytes
