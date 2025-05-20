@@ -1,5 +1,4 @@
 import io
-from typing import Any
 import json
 import os
 from asyncio import AbstractEventLoop, new_event_loop
@@ -8,7 +7,7 @@ from datetime import datetime
 import boto3
 from dotenv import load_dotenv
 from sqlalchemy import Select, select
-from sqlalchemy.ext.asyncio import  AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from src.extractors.get_tx_utxo import CardanoTxUtxoExtractor
 from src.models.blockfrost_models.cardano_transaction_utxo import TransactionUTxO
