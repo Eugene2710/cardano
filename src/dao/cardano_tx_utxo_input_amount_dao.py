@@ -12,8 +12,7 @@ from asyncio import new_event_loop, AbstractEventLoop
 from tenacity import retry, wait_fixed, stop_after_attempt, retry_if_exception_type
 from src.utils.logging_utils import setup_logging
 
-from database_management.cardano.cardano_tables import cardano_tx_utxo_input_table, cardano_tx_utxo_output_table, cardano_tx_utxo_input_amount_table, cardano_tx_utxo_output_amount_table
-from src.models.database_transfer_objects.cardano_transactions_utxo_dto import CardanoTransactionUtxoDTO, CardanoTxUtxoInputDTO, CardanoTxUtxoOutputDTO, TxAmountDTO
+from database_management.cardano.cardano_tables import  cardano_tx_utxo_output_amount_table
 
 logger = logging.getLogger(__name__)
 setup_logging(logger)
