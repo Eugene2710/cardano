@@ -46,9 +46,7 @@ class CardanoTxUtxoToETLPipeline:
             os.getenv("ASYNC_PG_CONNECTION_STRING", "")
         )
 
-    @click.command()
-    @click.option("--start-block-height", type=int)
-    @click.option("--end-block-height", type=int)
+
     async def run(self, start_block_height: int, end_block_height: int) -> None:
         """
         To check which block of transactions to start ingesting from:
@@ -130,7 +128,10 @@ class CardanoTxUtxoToETLPipeline:
         print(f"Uploaded batch ending at block: {end_batch}")
 
 
-def run():
+@click.command()
+@click.option("--start-block-height", type=int, required=True, help="First block.")
+@click.option("--end-block-height", type=int, required=True, help="Last block.")
+def run(start_block_height: int, end_block_height: int) -> None:
     load_dotenv()
     client = boto3.client(
         "s3",
@@ -156,7 +157,7 @@ def run():
         extractor=extractor
     )
     event_loop: AbstractEventLoop = new_event_loop()
-    event_loop.run_until_complete(cardano_tx_utxo_to_s3_etl_pipeline.run())
+    event_loop.run_until_complete(cardano_tx_utxo_to_s3_etl_pipeline.run(start_block_height, end_block_height))
 
 
 if __name__ == "__main__":
