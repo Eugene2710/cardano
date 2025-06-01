@@ -1,0 +1,118 @@
+import io
+from typing import Any
+import json
+import os
+from asyncio import AbstractEventLoop, new_event_loop
+from datetime import datetime
+import boto3
+from dotenv import load_dotenv
+import click
+
+from src.extractors.get_block import CardanoBlockExtractor
+from src.models.blockfrost_models.raw_cardano_blocks import RawBlockfrostCardanoBlockInfo
+from src.dao.provider_to_s3_import_status_dao import ProviderToS3ImportStatusDAO
+from src.file_explorer.s3_file_explorer import S3Explorer
+from src.models.database_transfer_objects.provider_to_s3_import_status import ProviderToS3ImportStatusDTO
+
+
+class CardanoBlocksToETLPipeline:
+    """
+    Responsible for:
+    - checking if last block height in database < the latest block in blockfrost (to_do next)
+    - extracting raw cardano blocks data from Blockfrost in batches of 1000
+    - convert list of extracted block data(dict type) to json -> bytes
+    - upload extracted data to S3 in json format
+    - update provider_to_s3_import_status table with the latest block number for "cardano_blocks" on 'table' column
+    """
+
+    def __init__(
+        self,
+        provider_to_s3_import_status_dao: ProviderToS3ImportStatusDAO,
+        table: str,
+        s3_explorer: S3Explorer,
+        extractor: CardanoBlockExtractor
+    ) -> None:
+        self._provider_to_s3_import_status_dao: ProviderToS3ImportStatusDAO = provider_to_s3_import_status_dao
+        self._table: str = table
+        self._s3_explorer: S3Explorer = s3_explorer
+        self._extractor: CardanoBlockExtractor = extractor
+
+    async def run(self, start_block_height: int, end_block_height: int) -> None:
+        latest_block_height: int | None = (
+            await self._provider_to_s3_import_status_dao.read_latest_import_status(
+                self._table
+            )
+        )
+
+        # start_block_height: int = (latest_block_height+1) if latest_block_height else 11292700
+        start_block_height: int = start_block_height
+        print(f"start_block_height={start_block_height}")
+        end_block_height: int = end_block_height
+        curr_block_height: int = start_block_height
+
+        # list to collect all block data into a list of dict
+        block_info_list: list[dict[str, Any]] = []
+        # TODO: introduce a cut off for the block numbers to stop extracting beyond it
+        # TODO: implement a try catch to catch blocks that could not be extracted anymore
+        while curr_block_height <= end_block_height:
+            block_info: RawBlockfrostCardanoBlockInfo = await self._extractor.get_block(str(curr_block_height))
+            block_info_list.append(block_info.model_dump())
+            curr_block_height += 1
+
+        combined_json_bytes = json.dumps(block_info_list).encode('utf-8')
+        # create a bytesIO buffer from JSON bytes
+        bytes_io = io.BytesIO(combined_json_bytes)
+        self._s3_explorer.upload_buffer(bytes_io, source_path=f"cardano/blocks/raw/{end_block_height}/cardano_blocks_raw/{end_block_height}.json")
+        print(f"uploaded file to s3")
+        updated_s3_import_status: ProviderToS3ImportStatusDTO = ProviderToS3ImportStatusDTO(
+            table=self._table,
+            block_height=end_block_height,
+            created_at=datetime.utcnow(),
+        )
+        await self._provider_to_s3_import_status_dao.insert_latest_import_status(
+            updated_s3_import_status
+        )
+
+
+@click.command()
+@click.option("--start-block-height", type=int, required=True, help="First block.")
+@click.option("--end-block-height", type=int, required=True, help="Last block.")
+def run(start_block_height: int, end_block_height: int) -> None:
+    """
+    Responsible for running the S3ETLPipeline
+    """
+    load_dotenv()
+    client = boto3.client(
+        "s3",
+        endpoint_url=os.getenv("AWS_S3_ENDPOINT", ""),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    )
+    s3_explorer: S3Explorer = S3Explorer(
+        bucket_name=os.getenv("AWS_S3_BUCKET", ""), client=client
+    )
+    provider_to_s3_import_status_dao: ProviderToS3ImportStatusDAO = ProviderToS3ImportStatusDAO(
+        os.getenv("ASYNC_PG_CONNECTION_STRING", "")
+    )
+    extractor: CardanoBlockExtractor = CardanoBlockExtractor()
+    cardano_blocks_to_s3_etl_pipeline: CardanoBlocksToETLPipeline = CardanoBlocksToETLPipeline(
+        provider_to_s3_import_status_dao=provider_to_s3_import_status_dao,
+        table="cardano_blocks",
+        s3_explorer=s3_explorer,
+        extractor=extractor
+    )
+    event_loop: AbstractEventLoop = new_event_loop()
+    event_loop.run_until_complete(cardano_blocks_to_s3_etl_pipeline.run(start_block_height=start_block_height, end_block_height=end_block_height))
+
+
+if __name__ == "__main__":
+    run()
+
+
+"""
+TODO:
+write an integration test to:
+1. write the interface/function signature
+2. write the rests; tests will fail since implementation is missing
+3. Complete implementation
+"""
