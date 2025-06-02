@@ -43,10 +43,11 @@ class CardanoBlocksToETLPipeline:
                 self._table
             )
         )
+        print(f"latest_block_height: {latest_block_height}")
 
         # start_block_height: int = (latest_block_height+1) if latest_block_height else 11292700
         start_block_height: int = start_block_height
-        print(f"start_block_height={start_block_height}")
+        print(f"start block height to be ingested: {start_block_height}")
         end_block_height: int = end_block_height
         curr_block_height: int = start_block_height
 
