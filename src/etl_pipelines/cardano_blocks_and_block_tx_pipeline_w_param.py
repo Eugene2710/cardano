@@ -43,7 +43,7 @@ class CardanoBlocksAndBlockTxETLPipeline:
     async def run(self, start_block_height: int, end_block_height: int) -> None:
         # curr = start_block_height
         end_block_height = end_block_height
-        batch: int = 2
+        batch: int = 2000
         while start_block_height <= end_block_height:
             # curr_start_block: int = max(start_block_height, curr_start_block)
             curr_end_block: int = min(start_block_height+batch-1, end_block_height)
