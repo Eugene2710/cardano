@@ -77,7 +77,7 @@ class CardanoTransactionsTOETLPipeline:
         tx_info_list: list[CardanoTransactions] = []
 
         # chunk all of these into the while loop and limit each json batch file to 1000 blocks
-        batch_limit: int = 6
+        batch_limit: int = 1000
         while start_block_height <= end_block_height:
             end_batch: int = min(start_block_height+batch_limit-1, end_block_height)
             block_ids: list[str] = [str(i) for i in range(start_block_height, end_batch+1)]
