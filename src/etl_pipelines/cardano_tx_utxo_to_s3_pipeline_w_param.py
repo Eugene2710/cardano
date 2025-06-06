@@ -57,21 +57,21 @@ class CardanoTxUtxoToETLPipeline:
             start_block = provider_to_s3_import_status_table.read_latest_import_status("cardano_transactions_utxo) + 1
             end_block = provider_to_s3_import_status_table.read_latest_import_status("cardano_transactions)
         """
-        tx_utxo_latest_block_height: int | None = (
-            await self._provider_to_s3_import_status_dao.read_latest_import_status(
-                "cardano_transactions_utxo"
-            )
-        )
-        print(f"tx_utxo_latest_block_height = {tx_utxo_latest_block_height}")
-        tx_latest_block_height: int | None = (
-            await self._provider_to_s3_import_status_dao.read_latest_import_status(
-                "cardano_transactions"
-            )
-        )
-        print(f"blocks_latest_block_height = {tx_latest_block_height}")
-        if tx_utxo_latest_block_height and tx_latest_block_height and tx_utxo_latest_block_height >= tx_latest_block_height:
-            print(f"transactions utxo in S3 up to date")
-            return None
+        # tx_utxo_latest_block_height: int | None = (
+        #     await self._provider_to_s3_import_status_dao.read_latest_import_status(
+        #         "cardano_transactions_utxo"
+        #     )
+        # )
+        # print(f"tx_utxo_latest_block_height = {tx_utxo_latest_block_height}")
+        # tx_latest_block_height: int | None = (
+        #     await self._provider_to_s3_import_status_dao.read_latest_import_status(
+        #         "cardano_transactions"
+        #     )
+        # )
+        # print(f"blocks_latest_block_height = {tx_latest_block_height}")
+        # if tx_utxo_latest_block_height and tx_latest_block_height and tx_utxo_latest_block_height >= tx_latest_block_height:
+        #     print(f"transactions utxo in S3 up to date")
+        #     return None
 
         # start_block_height: int = tx_utxo_latest_block_height+1
         # start_block_height: int = start_block_height
