@@ -1,6 +1,6 @@
 # Cardano 
 
-The Cardano Tasks can be broken down into 2 main parts, followed by data and proposal grant analysis done on Hex Platform for Analysis and Dashboard
+The Cardano Tasks can be broken down into 3 main parts, followed by data and proposal grant analysis done on Hex Platform for Analysis and Dashboard
 
 ## 1) Scraping of Cardano Grant Data
 The Grants data are being scraped from Ideascale and Project Catalyst sites which can be found in the [Ideascale](/Users/eugeneleejunping/Documents/cardano_grants/ideascale) and [Project Catalyst](/Users/eugeneleejunping/Documents/cardano_grants/project_catalyst) folders and moved into CSV files for further analyses.
@@ -8,6 +8,14 @@ The Grants data are being scraped from Ideascale and Project Catalyst sites whic
 ## 2) ETL Pipeline that siphons Cardano Blocks and Transactions data 
 A non-realtime ETL pipeline that siphons blocks, block transactions, transactions (inclusive of UTXO) data periodically
 at high throughput into S3 and Postgres, orchestrated by Airflow.
+
+## 3) Analysis of Cardano Data and Grants Data
+The Cardano data has been ingested into Hex, a dashboarding tool, for ease of analysis and building out charts.
+SQL queries can be written into HEX like this and graphs can be plotted on Hex.
+
+Here is a sample of how the querying and graph/dashboard looks like on Hex.
+![image](./images/hex_query_example.png)
+![image](./images/hex_graph_example.png)
 
 ### Architecture (updated)
 ![image](./images/cardano_etl_pipeline_architecture.png)
