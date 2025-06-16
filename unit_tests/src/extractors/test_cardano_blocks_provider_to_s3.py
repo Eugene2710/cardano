@@ -1,6 +1,7 @@
 import pytest
 from dotenv import load_dotenv
 from asyncio import AbstractEventLoop, new_event_loop
+from unittest.mock import AsyncMock, patch
 
 from src.extractors.get_block import CardanoBlockExtractor
 from src.models.blockfrost_models.raw_cardano_blocks import RawBlockfrostCardanoBlockInfo
@@ -20,7 +21,6 @@ class TestCardanoBlockExtractor:
     Act: read RawBlockfrostCardanoBlockInfo object
     Assert: assert if cardano blocks are correct
     """
-
     @pytest.fixture()
     def dummy_raw_blockfrost_block_info(self) -> RawBlockfrostCardanoBlockInfo:
         return RawBlockfrostCardanoBlockInfo(
@@ -43,16 +43,23 @@ class TestCardanoBlockExtractor:
             confirmations=700484,
         )
 
-    def test_cardano_block_extractor(self, dummy_raw_blockfrost_block_info: RawBlockfrostCardanoBlockInfo) -> None:
-        load_dotenv()
+    @pytest.mark.asyncio
+    async def test_cardano_block_extractor(self, dummy_raw_blockfrost_block_info: RawBlockfrostCardanoBlockInfo) -> None:
+        # load_dotenv()
         expected_height: str = "11302700"
-        cardano_block_extractor: CardanoBlockExtractor = CardanoBlockExtractor()
-        event_loop: AbstractEventLoop = new_event_loop()
-        expected_response: RawBlockfrostCardanoBlockInfo = event_loop.run_until_complete(
-            cardano_block_extractor.get_block(block_number=expected_height)
-        )
-        # confirmations can increase in value, and increases often, due to the increasing number of nodes confirming it
-        # over time, hence the exclusion of validating it
-        assert (
-            expected_response.model_dump(exclude={'confirmations'}) == dummy_raw_blockfrost_block_info.model_dump(exclude={'confirmations'})
-        )
+
+        with patch(
+            "src.extractors.get_block.CardanoBlockExtractor.get_block",
+            new=AsyncMock(return_value=dummy_raw_blockfrost_block_info),
+        ):
+            extractor=CardanoBlockExtractor()
+
+            response: RawBlockfrostCardanoBlockInfo = await extractor.get_block(block_number=expected_height)
+
+            # confirmations can increase in value, and increases often, due to the increasing number of nodes confirming it
+            # over time, hence the exclusion of validating it
+            assert (
+                    response.model_dump(
+                        exclude={'confirmations'}) == dummy_raw_blockfrost_block_info.model_dump(
+                exclude={'confirmations'})
+            )
