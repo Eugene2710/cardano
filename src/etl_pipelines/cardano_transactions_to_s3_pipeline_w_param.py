@@ -67,9 +67,9 @@ class CardanoTransactionsTOETLPipeline:
             )
         )
         print(f"blocks_tx_latest_block_height = {blocks_tx_latest_block_height}")
-        if tx_latest_block_height and blocks_tx_latest_block_height and tx_latest_block_height >= blocks_tx_latest_block_height:
-            print(f"transactions in S3 up to date")
-            return None
+        # if tx_latest_block_height and blocks_tx_latest_block_height and tx_latest_block_height >= blocks_tx_latest_block_height:
+        #     print(f"transactions in S3 up to date")
+        #     return None
 
         print(f"start_block_height = {start_block_height}")
         print(f"end block height = {end_block_height}")
