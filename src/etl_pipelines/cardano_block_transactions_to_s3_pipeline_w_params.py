@@ -61,9 +61,9 @@ class CardanoBlockTransactionsToETLPipeline:
             )
         )
         print(f"blocks_latest_block_height = {blocks_latest_block_height}")
-        if blocks_tx_latest_block_height and blocks_latest_block_height and blocks_tx_latest_block_height >= blocks_latest_block_height:
-            print(f"block transactions in S3 up to date")
-            return None
+        # if blocks_tx_latest_block_height and blocks_latest_block_height and blocks_tx_latest_block_height >= blocks_latest_block_height:
+        #     print(f"block transactions in S3 up to date")
+        #     return None
 
         # start_block_height: int = 11292700
         start_block_height: int = start_block_height
