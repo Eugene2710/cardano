@@ -7,6 +7,8 @@ import pytest
 from sqlalchemy import Engine,create_engine, text, TextClause, Table
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from dotenv import load_dotenv, find_dotenv
+import uuid
+
 
 env_file = find_dotenv("test.env") or ""
 if env_file:
@@ -19,20 +21,10 @@ else:
 #     return os.getenv("ASYNC_PG_CONNECTION_STRING")
 
 
-@pytest_asyncio.fixture(scope="session")
-async def pg_engine() -> AsyncEngine:
-    """
-    sets up an AsyncEngine and tears it down when you are done with it
-    """
-    engine: AsyncEngine = create_async_engine(os.getenv("ASYNC_PG_CONNECTION_STRING"))
-    yield engine
-    await engine.dispose()
-
-
 @pytest.fixture
 def db_name() -> str:
     """
-    create and return a unique dab name
+    create and return a unique db name
     """
     return "test_db_" + str(uuid.uuid4()).replace("-", "_")
 
@@ -70,3 +62,23 @@ def create_and_drop_db_table(db_name: str, input_tables: list[Table]) -> None:
             drop_text_clause: TextClause = text(f"DROP DATABASE {db_name}")
             conn.execute(drop_text_clause)
         default_db_engine.dispose()
+
+
+@pytest.fixture                    # default scope = function
+async def pg_engine(
+    db_name: str,                  # ① get the *string* db name
+    create_and_drop_db_table,      # ② ENSURE the DB + tables exist first
+) -> AsyncEngine:
+    """
+    AsyncEngine bound to the freshly-created per-test database.
+    Connections are disposed in finally so DROP DATABASE succeeds.
+    """
+    engine: AsyncEngine = create_async_engine(
+        f"postgresql+asyncpg://localhost:5432/{db_name}",
+        future=True,
+        echo=False,
+    )
+    try:
+        yield engine
+    finally:
+        await engine.dispose()     # close pool → allows DROP DATABASE
