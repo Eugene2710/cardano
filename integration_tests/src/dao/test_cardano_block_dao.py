@@ -7,7 +7,7 @@ import freezegun
 from datetime import datetime
 import pytest_asyncio
 from typing import Generator
-from sqlalchemy import text, Table
+from sqlalchemy import text, Table, CursorResult, Sequence, Row
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncConnection
 from dotenv import load_dotenv
 
@@ -21,8 +21,8 @@ def input_tables() -> list[Table]:
 
 
 @pytest.fixture
-def cardano_blocks_dao(db_name: str) -> CardanoBlockDAO:
-    dao: CardanoBlockDAO = CardanoBlockDAO(f"postgresql+asyncpg://localhost:5432/{db_name}")
+def cardano_blocks_dao(connection_string: str) -> CardanoBlockDAO:
+    dao: CardanoBlockDAO = CardanoBlockDAO(connection_string)
     return dao
 
 
@@ -45,22 +45,21 @@ class TestCardanoBlockDAO:
     #     convert cardano blocks data into csv -> BytesIO
     #     """
 
-    @pytest.mark.asyncio
-    # @freezegun.freeze_time(time_to_freeze=datetime(2025, 5, 30, 0, 0, 1))
+    @pytest.mark.asyncio_cooperative
     async def test_create_temp_table(self, pg_engine: AsyncEngine, cardano_blocks_dao: CardanoBlockDAO) -> None:
         """
         GIVEN an async connection, cardano_blocks_dao
         WHEN create_temp_table is called
-        THEN the temp_table name should be the name of and dropped automatically after
+        THEN the temp_table name should exist and dropped automatically after
         """
-
         async with pg_engine.begin() as conn:
             await cardano_blocks_dao.create_temp_table(conn)
             tmp: str = cardano_blocks_dao._temp_table_name
 
             # check if table of the temp table name exists in postgres
-            row = await conn.execute(text("SELECT to_regclass(:t)"), {"t": tmp})
-            assert row.scalar_one() == tmp
+            # if table does not exist, sqlalchemy.exc.ProgrammingError will be raised
+            cursor_result: CursorResult = await conn.execute(text(f"SELECT * FROM {tmp}"))
+            rows: Row | None = cursor_result.fetchone()
 
         # check if table of the temp table name does not exist anymore
         async with pg_engine.connect() as conn:
