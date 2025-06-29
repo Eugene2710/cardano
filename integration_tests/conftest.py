@@ -30,6 +30,11 @@ def db_name() -> str:
 
 
 @pytest.fixture
+def connection_string(db_name: str) -> str:
+    return f"postgresql+asyncpg://localhost:5432/{db_name}"
+
+
+@pytest.fixture
 def create_and_drop_db_table(db_name: str, input_tables: list[Table]) -> None:
     """
     Responsible for creating a unique DB to be used for integration tests by yielding it and dropping it after use
@@ -66,18 +71,14 @@ def create_and_drop_db_table(db_name: str, input_tables: list[Table]) -> None:
 
 @pytest.fixture                    # default scope = function
 async def pg_engine(
-    db_name: str,                  # ① get the *string* db name
+    connection_string: str,                  # ① get the *string* db name
     create_and_drop_db_table,      # ② ENSURE the DB + tables exist first
 ) -> AsyncEngine:
     """
     AsyncEngine bound to the freshly-created per-test database.
     Connections are disposed in finally so DROP DATABASE succeeds.
     """
-    engine: AsyncEngine = create_async_engine(
-        f"postgresql+asyncpg://localhost:5432/{db_name}",
-        future=True,
-        echo=False,
-    )
+    engine: AsyncEngine = create_async_engine(connection_string)
     try:
         yield engine
     finally:
