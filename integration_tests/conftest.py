@@ -1,8 +1,6 @@
 """
 contains fixtures/reusable components common to all tests
 """
-import os
-import pytest_asyncio
 import pytest
 from sqlalchemy import Engine,create_engine, text, TextClause, Table
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -15,10 +13,6 @@ if env_file:
     load_dotenv(env_file, override=False)
 else:
     raise RuntimeError("Cannot find test.env – set ASYNC_PG_CONNECTION_STRING")
-
-# def connection_string(self) -> str:
-#     load_dotenv()
-#     return os.getenv("ASYNC_PG_CONNECTION_STRING")
 
 
 @pytest.fixture
