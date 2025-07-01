@@ -13,9 +13,14 @@ at high throughput into S3 and Postgres, orchestrated by Airflow.
 The Cardano data has been ingested into Hex, a dashboarding tool, for ease of analysis and building out charts.
 SQL queries can be written into HEX like this and graphs can be plotted on Hex.
 
+Here is a sample of the Hex Dashboard/App
+![image](./images/cardano_hex_overview_1.png)
+![image](./images/cardano_hex_overview_2.png)
+![image](./images/minswap_hex_overview_1.png)
+![image](./images/minswap_hex_overview_2.png)
+
 Here is a sample of how the querying and graph/dashboard looks like on Hex.
 ![image](./images/hex_query_example.png)
-![image](./images/hex_graph_example.png)
 
 ### Architecture (updated)
 ![image](./images/cardano_etl_pipeline_architecture.png)
