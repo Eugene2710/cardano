@@ -10,6 +10,8 @@ jobs:
   build_and_db_tests:
     runs-on: ubuntu-latest
     container: python:3.12-slim-bookworm
+    env:
+      CI_CONTAINER: true   # tells workflow we’re **already** in Python
 
     services:
       postgres:
@@ -39,14 +41,14 @@ jobs:
           curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
           apt-get install -y nodejs
 
-      - name: System deps (libpq +lsb_release
+      - name: System deps (libpq + lsb_release)
         run: |
           apt-get update -y
           apt-get install -y libpq-dev gcc lsb-release
 
       - name: Set up Python
         uses: actions/setup-python@v5
-        if: ${{ env.ACT != 'true' }}
+        if: ${{ !env.CI_CONTAINER && env.ACT != 'true' }}
         with:
           python-version: '3.12'
           cache: 'pip'
