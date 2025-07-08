@@ -31,18 +31,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: |
+          apt-get update -y
+          apt-get install -y curl libpq-dev gcc lsb-release
+
       - name: Install Node (act only)
         if: ${{ env.ACT == 'true' }}
         run: |
-          apt-get update -y
-          apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
           apt-get install -y nodejs
 
-      - name: System deps (libpq + lsb_release)
-        run: |
-          apt-get update -y
-          apt-get install -y libpq-dev gcc lsb-release
 
       - name: Set up Python
         uses: actions/setup-python@v5
