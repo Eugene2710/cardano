@@ -1,8 +1,6 @@
 """
 contains fixtures/reusable components common to all tests
 """
-import os
-import pytest_asyncio
 import pytest
 from sqlalchemy import Engine,create_engine, text, TextClause, Table
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -16,10 +14,6 @@ if env_file:
 else:
     raise RuntimeError("Cannot find test.env – set ASYNC_PG_CONNECTION_STRING")
 
-# def connection_string(self) -> str:
-#     load_dotenv()
-#     return os.getenv("ASYNC_PG_CONNECTION_STRING")
-
 
 @pytest.fixture
 def db_name() -> str:
@@ -31,7 +25,9 @@ def db_name() -> str:
 
 @pytest.fixture
 def connection_string(db_name: str) -> str:
-    return f"postgresql+asyncpg://localhost:5432/{db_name}"
+    # use localhost for local testing
+    # return f"postgresql+asyncpg://localhost:5432/{db_name}"
+    return f"postgresql+asyncpg://postgres:postgres@postgres:5432/{db_name}"
 
 
 @pytest.fixture
@@ -41,7 +37,8 @@ def create_and_drop_db_table(db_name: str, input_tables: list[Table]) -> None:
     input_tables param is to be created as a separate pytest fixture in the individual test files
     """
     # default db engine is responsible for creating a database before dropping it
-    default_db_engine: Engine | None = create_engine("postgresql://localhost:5432/postgres")
+    # default_db_engine: Engine | None = create_engine("postgresql://localhost:5432/postgres")
+    default_db_engine: Engine | None = create_engine("postgresql://postgres:postgres@postgres:5432/postgres")
     test_db_engine: Engine | None = None
     try:
         with default_db_engine.connect().execution_options(
@@ -50,7 +47,8 @@ def create_and_drop_db_table(db_name: str, input_tables: list[Table]) -> None:
             text_clause: TextClause = text(f"CREATE DATABASE {db_name}")
             conn.execute(text_clause)
         default_db_engine.dispose()
-        test_db_engine = create_engine(f"postgresql://localhost:5432/{db_name}")
+        # test_db_engine = create_engine(f"postgresql://localhost:5432/{db_name}")
+        test_db_engine = create_engine(f"postgresql://postgres:postgres@postgres:5432/{db_name}")
         with test_db_engine.begin() as conn:
             for table in input_tables:
                 table.create(conn)
